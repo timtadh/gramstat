@@ -8,6 +8,8 @@ import os, sys
 from getopt import getopt, GetoptError
 import markdown
 
+VERSION = 'git master'
+
 usage_message = \
 '''usage: stat.py [Options] [FILE]+'''
 
@@ -96,10 +98,18 @@ error_codes = {
     'file_not_found':2,
     'option':3,
     'args':4,
+    'version':5,
+    'bad_bool':6,
+    'no_args':7,
 }
 
 def log(msg):
     print msg
+
+def version():
+    '''Print version and exits'''
+    log('stat.py version ' + VERSION)
+    sys.exit(error_codes['version'])
 
 def usage(code=None):
     '''Prints the usage and exits with an error code specified by code. If code
@@ -110,17 +120,56 @@ def usage(code=None):
         code = error_codes['usage']
     sys.exit(code)
 
+def assert_file_exists(path):
+    '''checks if the file exists. If it doesn't causes the program to exit.
+    @param path : path to file
+    @returns : the path to the file (an echo) [only on success]
+    '''
+    path = os.path.abspath(path)
+    if not os.path.exists(path):
+        log('No file found. "%(path)s"' % locals())
+        usage(error_codes['file_not_found'])
+
+def parse_bool(s):
+    '''parses s to check it is in [true, false]. returns the appropriate
+    bool. If it isn't a book prints error and exits.
+    @param s : a string
+    @returns bool
+    '''
+    bools = {'true':True, 'false':False}
+    if s not in bools:
+        log('Expected bool found "%s"' % (s))
+        log('You probably want %s case matters' % str(bools.keys()))
+        usage(error_codes['bad_bool'])
+    return bools[s]
+  
 def main(args):
+    
+    if not args: usage(error_codes['no_args'])
 
     try:
-        opts, args = getopt(args, 'h', ['help'])
+        opts, args = getopt(args, 
+            'hvg:o:i:', 
+            ['help', 'version', 'grammar=', 'outdir=', 'imgs=']
+        )
     except GetoptError, err:
         log(err)
         usage(error_codes['option'])
-      
+        
+    usetables = False
+    outdir = './gramstats'
+    grammar = None
     for opt, arg in opts:
         if opt in ('-h', '--help'):
             usage()
+        elif opt in ('-v', '--version'):
+            version()
+        elif opt in ('-g', '--grammar'):
+            grammar = assert_file_exists(arg)
+        elif opt in ('-o', '--outdir'):
+            outdir = assert_file_exists(arg)
+        elif opt in ('-i', '--imgs'):
+            outdir = parse_bool(arg)
     
 
 if __name__ == '__main__':
