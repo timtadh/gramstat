@@ -101,6 +101,7 @@ error_codes = {
     'version':5,
     'bad_bool':6,
     'no_args':7,
+    'bad_artspec':8,
 }
 
 def log(msg):
@@ -142,15 +143,40 @@ def parse_bool(s):
         log('You probably want %s case matters' % str(bools.keys()))
         usage(error_codes['bad_bool'])
     return bools[s]
-  
+
+def artifacts():
+    '''Print the available artifacts and exit normally.'''
+    log('No artifacts currently available.')
+    sys.exit(0)
+
+def parse_artspec(s):
+    '''Parses "artspecs" and returns (artifact, outpath). An artspec is the
+    just the name of the artifact colon the path where it should be placed.
+    If string is not in the artspec langauge print error and exit.
+    
+      ie. name:path
+      eg. asts:./gramstats/asts/
+    
+    @param s : string in outspec format
+    @returns : artifact name, path
+    '''
+    if ':' not in s:
+        log('Expecting an <artspec> got "%s"' % (s))
+        usage(error_codes['bad_artspec'])
+    name, path = s.split(':', 1)
+    return name, path
+
 def main(args):
     
     if not args: usage(error_codes['no_args'])
 
     try:
         opts, args = getopt(args, 
-            'hvg:o:i:', 
-            ['help', 'version', 'grammar=', 'outdir=', 'imgs=']
+            'hvg:o:i:t:aA:T:', 
+            [
+              'help', 'version', 'grammar=', 'outdir=', 'imgs=', 'tables=',
+              'artifacts', 'artifact=', 'usetables=',
+            ]
         )
     except GetoptError, err:
         log(err)
@@ -159,6 +185,9 @@ def main(args):
     usetables = False
     outdir = './gramstats'
     grammar = None
+    genimgs = True
+    gentables = True
+    requested_artifacts = dict()
     for opt, arg in opts:
         if opt in ('-h', '--help'):
             usage()
@@ -169,7 +198,15 @@ def main(args):
         elif opt in ('-o', '--outdir'):
             outdir = assert_file_exists(arg)
         elif opt in ('-i', '--imgs'):
-            outdir = parse_bool(arg)
+            genimgs = parse_bool(arg)
+        elif opt in ('-t', '--tables'):
+            gentables = parse_bool(arg)
+        elif opt in ('-a', '--artifacts'):
+            artifacts()
+        elif opt in ('-A', '--Artifact'):
+            requested_artifacts.update((parse_artspec(arg),))
+        elif opt in ('-T', '--usetables'):
+            usetables = assert_file_exists(arg)
     
 
 if __name__ == '__main__':
