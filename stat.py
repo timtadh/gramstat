@@ -8,6 +8,8 @@ import os, sys
 from getopt import getopt, GetoptError
 import markdown
 
+VERSION = 'git master'
+
 usage_message = \
 '''usage: stat.py [Options] [FILE]+'''
 
@@ -96,10 +98,19 @@ error_codes = {
     'file_not_found':2,
     'option':3,
     'args':4,
+    'version':5,
+    'bad_bool':6,
+    'no_args':7,
+    'bad_artspec':8,
 }
 
 def log(msg):
     print msg
+
+def version():
+    '''Print version and exits'''
+    log('stat.py version ' + VERSION)
+    sys.exit(error_codes['version'])
 
 def usage(code=None):
     '''Prints the usage and exits with an error code specified by code. If code
@@ -116,19 +127,94 @@ def mktree(s):
             if not line: continue
             if ':' not in line:
                 raise SyntaxError, 'Expected colon, none found.'
-            children, sym = 
+            children, sym = s.split(':', 1)
+
+def assert_file_exists(path):
+    '''checks if the file exists. If it doesn't causes the program to exit.
+    @param path : path to file
+    @returns : the path to the file (an echo) [only on success]
+    '''
+    path = os.path.abspath(path)
+    if not os.path.exists(path):
+        log('No file found. "%(path)s"' % locals())
+        usage(error_codes['file_not_found'])
+
+def parse_bool(s):
+    '''parses s to check it is in [true, false]. returns the appropriate
+    bool. If it isn't a book prints error and exits.
+    @param s : a string
+    @returns bool
+    '''
+    bools = {'true':True, 'false':False}
+    if s not in bools:
+        log('Expected bool found "%s"' % (s))
+        log('You probably want %s case matters' % str(bools.keys()))
+        usage(error_codes['bad_bool'])
+    return bools[s]
+
+def artifacts():
+    '''Print the available artifacts and exit normally.'''
+    log('No artifacts currently available.')
+    sys.exit(0)
+
+def parse_artspec(s):
+    '''Parses "artspecs" and returns (artifact, outpath). An artspec is the
+    just the name of the artifact colon the path where it should be placed.
+    If string is not in the artspec langauge print error and exit.
+    
+      ie. name:path
+      eg. asts:./gramstats/asts/
+    
+    @param s : string in outspec format
+    @returns : artifact name, path
+    '''
+    if ':' not in s:
+        log('Expecting an <artspec> got "%s"' % (s))
+        usage(error_codes['bad_artspec'])
+    name, path = s.split(':', 1)
+    return name, path
 
 def main(args):
+    
+    if not args: usage(error_codes['no_args'])
 
     try:
-        opts, args = getopt(args, 'h', ['help'])
+        opts, args = getopt(args, 
+            'hvg:o:i:t:aA:T:', 
+            [
+              'help', 'version', 'grammar=', 'outdir=', 'imgs=', 'tables=',
+              'artifacts', 'artifact=', 'usetables=',
+            ]
+        )
     except GetoptError, err:
         log(err)
         usage(error_codes['option'])
-      
+        
+    usetables = False
+    outdir = './gramstats'
+    grammar = None
+    genimgs = True
+    gentables = True
+    requested_artifacts = dict()
     for opt, arg in opts:
         if opt in ('-h', '--help'):
             usage()
+        elif opt in ('-v', '--version'):
+            version()
+        elif opt in ('-g', '--grammar'):
+            grammar = assert_file_exists(arg)
+        elif opt in ('-o', '--outdir'):
+            outdir = assert_file_exists(arg)
+        elif opt in ('-i', '--imgs'):
+            genimgs = parse_bool(arg)
+        elif opt in ('-t', '--tables'):
+            gentables = parse_bool(arg)
+        elif opt in ('-a', '--artifacts'):
+            artifacts()
+        elif opt in ('-A', '--Artifact'):
+            requested_artifacts.update((parse_artspec(arg),))
+        elif opt in ('-T', '--usetables'):
+            usetables = assert_file_exists(arg)
     
 
 if __name__ == '__main__':
