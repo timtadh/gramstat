@@ -6,9 +6,22 @@
 
 import os, sys
 from getopt import getopt, GetoptError
-import markdown
+
+import ast
 
 VERSION = 'git master'
+
+error_codes = {
+    'usage':1,
+    'file_not_found':2,
+    'option':3,
+    'args':4,
+    'version':5,
+    'bad_bool':6,
+    'no_args':7,
+    'bad_artspec':8,
+    'bad_file_reads':9,
+}
 
 usage_message = \
 '''usage: stat.py [Options] [FILE]+'''
@@ -93,16 +106,6 @@ Specs
 
 '''
 
-error_codes = {
-    'usage':1,
-    'file_not_found':2,
-    'option':3,
-    'args':4,
-    'version':5,
-    'bad_bool':6,
-    'no_args':7,
-    'bad_artspec':8,
-}
 
 def log(msg):
     print msg
@@ -122,12 +125,23 @@ def usage(code=None):
     sys.exit(code)
 
 def mktree(s):
+    '''Makes a tree from the pre-order enumeration. See the usage for the grammar.
+    @params s : string in pre-order enumeration
+    @returns <ast.Node> as the root of the tree.
+    '''
     def g(s):
         for line in s.split('\n'):
             if not line: continue
             if ':' not in line:
                 raise SyntaxError, 'Expected colon, none found.'
             children, sym = s.split(':', 1)
+            if not children.isdigit():
+                raise SyntaxError, ( 
+                  'Expected the format to be children:label. Where children is '
+                  'an int.'
+                )
+            yield int(children), sym
+    return ast.build_tree(g(s))
 
 def assert_file_exists(path):
     '''checks if the file exists. If it doesn't causes the program to exit.
@@ -138,6 +152,20 @@ def assert_file_exists(path):
     if not os.path.exists(path):
         log('No file found. "%(path)s"' % locals())
         usage(error_codes['file_not_found'])
+
+def load_file_or_die(path):
+    '''Reads the file, if there is an error it kills the program.
+    @param path : the path to the file
+    @returns string : the contents of the file
+    '''
+    try:
+        f = open(path, 'r')
+        s = f.read()
+        f.close()
+    except Exception:
+        log('Error reading file at "%s".' % path)
+        usage(error_codes['bad_file_read'])
+    return s
 
 def parse_bool(s):
     '''parses s to check it is in [true, false]. returns the appropriate
@@ -176,8 +204,6 @@ def parse_artspec(s):
 
 def main(args):
     
-    if not args: usage(error_codes['no_args'])
-
     try:
         opts, args = getopt(args, 
             'hvg:o:i:t:aA:T:', 
@@ -216,6 +242,12 @@ def main(args):
         elif opt in ('-T', '--usetables'):
             usetables = assert_file_exists(arg)
     
+    if (not usetables) and len(args) == 0:
+        log('You must provide a list of syntax trees to characterize.')
+        usage(error_codes['no_args'])
+
+    file_paths = [assert_file_exists(arg) for arg in args]
+    syntax_trees = [mktree(read_file_or_die(path)) for path in file_paths]
 
 if __name__ == '__main__':
     main(sys.argv[1:])
