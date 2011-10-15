@@ -110,6 +110,14 @@ def usage(code=None):
         code = error_codes['usage']
     sys.exit(code)
 
+def mktree(s):
+    def g(s):
+        for line in s.split('\n'):
+            if not line: continue
+            if ':' not in line:
+                raise SyntaxError, 'Expected colon, none found.'
+            children, sym = 
+
 def main(args):
 
     try:
