@@ -20,17 +20,24 @@ def available_artifacts(conf):
     '''Create a dictionary of all of the available artifacts that /could/ be
     created. 
     @params conf : The configuration created by stat.py
-    @returns : map string -> function
+    @returns : map string -> {'function':f, 'type':type}
     '''
-    return dict((name, d['function'])
+    return dict((name, d)
       for name, d in registration)
 
 def filter_artifacts(conf, artifacts):
     '''Filter the list of artifacts via the specified configuration.
     @params conf : The configuration created by stat.py
-    @params artifacts : map string -> function
+    @params artifacts : map string -> {'function':f, 'type':type}
     @returns : a new map string -> function
     '''
-    return dict((name, f) for name, f in artifacts.iteritems())
+    def accept(name, d):
+        if name in conf['requested_artifacts']: return True
+        elif d['type'] == 'img' and conf['genimgs']: return True
+        elif d['type'] == 'table' and conf['gentables']: return True
+        return False
+
+    return dict((name, d['function']) 
+        for name, d in artifacts.iteritems() if accept(name, d))
 
 
