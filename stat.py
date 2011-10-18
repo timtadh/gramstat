@@ -37,11 +37,11 @@ Explanation
     enumeration.
 
       grammar
-       
+
         nodes := nodes node
         nodes := node
         node := NUM COLON STRING NEWLINE
-        
+
         COLON = r':'
         NUM = r'[0-9]+'
         STRING = r'.+$'
@@ -49,9 +49,9 @@ Explanation
 
         NB: Whitespace is signficant, but STRING matches whitespace (except for
             newline).
-      
+
       eg.
-        
+
         2:root
         2:left side
         0:x
@@ -63,18 +63,18 @@ Explanation
         0:c
 
       corresponds to
-                              root                                        
-                              /  \                                        
-                             /    \                                       
-                    left side      right side                         
-                    /    \         /    |    \                               
-                   x      y       a     b     c                           
-                          |                                               
-                          z                                               
-                                                                                  
+                              root
+                              /  \
+                             /    \
+                    left side      right side
+                    /    \         /    |    \
+                   x      y       a     b     c
+                          |
+                          z
+
 Options
 
-    -h, help                            print this message   
+    -h, help                            print this message
     -v, version                         print the version
     -g, grammar=<file>                  supply a known grammar to annotate
     -o, outdir=<directory>              supply a path to a non-existant
@@ -142,7 +142,7 @@ def mktree(s):
                 raise SyntaxError, 'Expected colon, none found.'
             children, sym = line.split(':', 1)
             if not children.isdigit():
-                raise SyntaxError, ( 
+                raise SyntaxError, (
                   'Expected the format to be children:label. Where children is '
                   'an int.'
                 )
@@ -221,10 +221,10 @@ def parse_artspec(s):
     '''Parses "artspecs" and returns (artifact, outpath). An artspec is the
     just the name of the artifact colon the path where it should be placed.
     If string is not in the artspec langauge print error and exit.
-    
+
       ie. name:path
       eg. asts:./gramstats/asts/
-    
+
     @param s : string in outspec format
     @returns : artifact name, path
     '''
@@ -235,10 +235,11 @@ def parse_artspec(s):
     return name, path
 
 def main(args):
-    
+
     try:
-        opts, args = getopt(args, 
-            'hvg:o:i:t:aA:T:s', 
+        opts, args = getopt(
+            args,
+            'hvg:o:i:t:aA:T:s',
             [
               'help', 'version', 'grammar=', 'outdir=', 'imgs=', 'tables=',
               'artifacts', 'artifact=', 'usetables=', 'stdin',
@@ -247,7 +248,7 @@ def main(args):
     except GetoptError, err:
         log(err)
         usage(error_codes['option'])
-    
+
     stdin = False
     usetables = False
     outdir = './gramstats'
@@ -280,7 +281,7 @@ def main(args):
             usetables = assert_file_exists(arg)
         elif opt in ('-s', '--stdin'):
             stdin = True
-    
+
     if len(args) > 0 and stdin:
         log('Cannot process both files and stdin, supply one or the other.')
         usage(error_codes['stdin_and_files'])
@@ -292,7 +293,7 @@ def main(args):
     file_paths = [assert_file_exists(arg) for arg in args]
     syntax_trees = [mktree(read_file_or_die(path)) for path in file_paths]
     if stdin: syntax_trees += [mktree(tree) for tree in split_stdin()]
-   
+
     if requested_artifacts:
         genimgs = False
         gentables = False
@@ -305,7 +306,7 @@ def main(args):
             'gentables':gentables,
             'requested_artifacts':requested_artifacts,
     }
-    
+
     if list_artifacts:
         show_artifacts(conf)
     else:
