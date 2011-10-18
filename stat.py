@@ -213,7 +213,8 @@ def parse_bool(s):
 
 def show_artifacts(conf):
     '''Print the available artifacts and exit normally.'''
-    log('No artifacts currently available.')
+    for name in artifacts.available_artifacts(conf).keys():
+        log(name)
     sys.exit(0)
 
 def parse_artspec(s):
@@ -288,9 +289,6 @@ def main(args):
     file_paths = [assert_file_exists(arg) for arg in args]
     syntax_trees = [mktree(read_file_or_die(path)) for path in file_paths]
     if stdin: syntax_trees += [mktree(tree) for tree in split_stdin()]
-    for tree in syntax_trees:
-        print tree
-        print
    
     if requested_artifacts:
         genimgs = False
