@@ -7,7 +7,7 @@
 import os, sys
 from getopt import getopt, GetoptError
 
-import ast
+import ast, artifacts
 
 VERSION = 'git master'
 
@@ -211,7 +211,7 @@ def parse_bool(s):
         usage(error_codes['bad_bool'])
     return bools[s]
 
-def artifacts(conf):
+def show_artifacts(conf):
     '''Print the available artifacts and exit normally.'''
     log('No artifacts currently available.')
     sys.exit(0)
@@ -306,8 +306,9 @@ def main(args):
     }
     
     if list_artifacts:
-        artifacts(conf)
-    print conf
+        show_artifacts(conf)
+    else:
+        artifacts.produce(conf)
 
 if __name__ == '__main__':
     main(sys.argv[1:])
