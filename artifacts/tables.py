@@ -29,26 +29,29 @@ def save(path, table):
     f.close()
     return table
 
-@registration.register('table')
-def symbol_count(path, oldtable, conf):
+def symbol_counter(path, oldtable, trees, callback):
     symbols = dict()
-    walktrees(
-        conf['trees'],
-        lambda node:
-            symbols.__setitem__(node.label, symbols.get(node.label, 0) + 1)
-    )
+    if oldtable is not None:
+        symbols.update((name, count) for name, count in oldtable)
+    walktrees(trees, functools.partial(callback, symbols))
 
     return save(path, tuple((name,count)
         for name, count in symbols.iteritems()))
 
+@registration.register('table')
+def symbol_count(path, oldtable, conf):
+    def callback(symbols, node):
+        symbols[node.label] = symbols.get(node.label, 0) + 1
+    return symbol_counter(path, oldtable, conf['trees'], callback)
 
 @registration.register('table')
 def non_term_count(path, oldtable, conf):
-    symbols = dict()
-    def callback(node):
+    def callback(symbols, node):
         if node.children: symbols[node.label] = symbols.get(node.label, 0) + 1
+    return symbol_counter(path, oldtable, conf['trees'], callback)
 
-    walktrees(conf['trees'], callback)
-
-    return save(path, tuple((name,count)
-        for name, count in symbols.iteritems()))
+@registration.register('table')
+def term_count(path, oldtable, conf):
+    def callback(symbols, node):
+        if not node.children: symbols[node.label] = symbols.get(node.label, 0) + 1
+    return symbol_counter(path, oldtable, conf['trees'], callback)
