@@ -32,7 +32,7 @@ def trees(conf):
         yield i, tree
 
 @reg.registration.register('img', range=trees)
-def ast_imgs(outdir, i, tree):
+def ast_imgs(outdir, tables, i, tree):
     if not os.path.exists(outdir):
         os.mkdir(outdir)
     dot(os.path.join(outdir, str(i)), tree.dotty())

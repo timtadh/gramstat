@@ -21,7 +21,7 @@ def walktrees(trees, process):
         walk(tree)
 
 @registration.register('table')
-def symbol_count(path, conf):
+def symbol_count(path, oldtable, conf):
     fname = path + '.csv'
     symbols = dict()
     trees = conf['trees']
@@ -42,7 +42,7 @@ def symbol_count(path, conf):
     f.close()
 
 @registration.register('table')
-def non_term_count(path, conf):
+def non_term_count(path, oldtable, conf):
     fname = path + '.csv'
     symbols = dict()
     trees = conf['trees']
