@@ -31,7 +31,7 @@ def save(path, table):
 def symbol_counter(path, oldtable, trees, callback):
     symbols = dict()
     if oldtable is not None:
-        symbols.update(row for row in oldtable)
+        symbols.update(oldtable)
     walktrees(trees, functools.partial(callback, symbols))
 
     return save(path, tuple((name,count)
