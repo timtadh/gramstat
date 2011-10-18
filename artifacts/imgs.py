@@ -27,14 +27,14 @@ def dot(name, dotty):
     p.stdin.close()
     p.wait()
 
-@reg.registration.register('asts', 'img')
-def ast_imgs(conf):
-    outdir = os.path.join(conf['outdir'], 'ast_imgs')
+def trees(conf):
+    for i, tree in enumerate(conf['trees']):
+        yield i, tree
+
+@reg.registration.register('img', range=trees)
+def ast_imgs(outdir, i, tree):
     if not os.path.exists(outdir):
         os.mkdir(outdir)
-    
-    trees = conf['trees']
-    for i, tree in enumerate(trees):
-        dot(os.path.join(outdir, str(i)), tree.dotty())
-        
+    dot(os.path.join(outdir, str(i)), tree.dotty())
+
 

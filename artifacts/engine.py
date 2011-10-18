@@ -6,22 +6,31 @@
 
 
 from reg import registration
-import imgs
-import tables
+
+INITED = False
+def defered_imports(conf):
+    global INITED
+    if INITED: return
+    INITED = True
+    registration.init(conf)
+    import imgs
+    import tables
 
 def produce(conf):
     '''Create the artifacts requested by the configuration using the various
     options indicated.
     '''
+    defered_imports(conf)
     for f in filter_artifacts(conf, available_artifacts(conf)).itervalues():
         f(conf)
 
 def available_artifacts(conf):
     '''Create a dictionary of all of the available artifacts that /could/ be
-    created. 
+    created.
     @params conf : The configuration created by stat.py
     @returns : map string -> {'function':f, 'type':type}
     '''
+    defered_imports(conf)
     return dict((name, d)
       for name, d in registration)
 
@@ -37,7 +46,7 @@ def filter_artifacts(conf, artifacts):
         elif d['type'] == 'table' and conf['gentables']: return True
         return False
 
-    return dict((name, d['function']) 
+    return dict((name, d['function'])
         for name, d in artifacts.iteritems() if accept(name, d))
 
 

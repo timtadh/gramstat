@@ -8,7 +8,6 @@ import sys, os, subprocess
 
 from reg import registration
 
-
 def walktrees(trees, process):
     def walk(root):
         stack = list()
@@ -21,9 +20,9 @@ def walktrees(trees, process):
     for tree in trees:
         walk(tree)
 
-@registration.register('symbol_count', 'table')
-def symbol_count(conf):
-    fname = os.path.join(conf['outdir'], 'symbol_count.csv')
+@registration.register('table')
+def symbol_count(path, conf):
+    fname = path + '.csv'
     symbols = dict()
     trees = conf['trees']
 
@@ -42,9 +41,9 @@ def symbol_count(conf):
     f.write('\n'*2)
     f.close()
 
-@registration.register('non_term_count', 'table')
-def non_term_count(conf):
-    fname = os.path.join(conf['outdir'], 'non_term_count.csv')
+@registration.register('table')
+def non_term_count(path, conf):
+    fname = path + '.csv'
     symbols = dict()
     trees = conf['trees']
 
