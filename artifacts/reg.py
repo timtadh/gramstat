@@ -39,12 +39,14 @@ class Registration(object):
             return tuple(col.strip() for col in row.split(','))
         if range is None: range = default_range
         if rowloader is None: rowloader = default_rowloader
+
         def dec(f):
             name = f.func_name
             path = os.path.join(self.basepath, name)
             path += '' if type == 'img' else '.csv'
             if type == 'table' and self.loadtables:
                 self._loadtable(name, path, rowloader)
+
             @functools.wraps(f)
             def wrapper(conf):
                 for obj in range(conf):
@@ -58,6 +60,7 @@ class Registration(object):
                         raise Exception, 'Should be unreachable.'
             self._d.update({name:{'type':type, 'function':wrapper}})
             return wrapper
+
         return dec
 
     def __iter__(self):
