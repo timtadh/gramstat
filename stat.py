@@ -22,6 +22,7 @@ error_codes = {
     'bad_artspec':8,
     'bad_file_reads':9,
     'stdin_and_files':10,
+    'file_instead_of_dir':11,
 }
 
 usage_message = \
@@ -159,6 +160,18 @@ def assert_file_exists(path):
         usage(error_codes['file_not_found'])
     return path
 
+def assert_dir_exists(path):
+    '''checks if a directory exists. if not it creates it. if something exists
+    and it is not a directory it exits with an error.
+    '''
+    path = os.path.abspath(path)
+    if not os.path.exists(path):
+        os.mkdir(path)
+    elif not os.path.isdir(path):
+        log('Expected a directory found a file. "%(path)s"' % locals())
+        usage(error_codes['file_instead_of_dir'])
+    return path
+
 def read_file_or_die(path):
     '''Reads the file, if there is an error it kills the program.
     @param path : the path to the file
@@ -198,7 +211,7 @@ def parse_bool(s):
         usage(error_codes['bad_bool'])
     return bools[s]
 
-def artifacts():
+def artifacts(conf):
     '''Print the available artifacts and exit normally.'''
     log('No artifacts currently available.')
     sys.exit(0)
@@ -241,6 +254,7 @@ def main(args):
     genimgs = True
     gentables = True
     requested_artifacts = dict()
+    list_artifacts = False
     for opt, arg in opts:
         if opt in ('-h', '--help'):
             usage()
@@ -255,7 +269,7 @@ def main(args):
         elif opt in ('-t', '--tables'):
             gentables = parse_bool(arg)
         elif opt in ('-a', '--artifacts'):
-            artifacts()
+            list_artifacts = True
         elif opt in ('-A', '--Artifact'):
             requested_artifacts.update((parse_artspec(arg),))
         elif opt in ('-T', '--usetables'):
@@ -277,6 +291,23 @@ def main(args):
     for tree in syntax_trees:
         print tree
         print
+   
+    if requested_artifacts:
+        genimgs = False
+        gentables = False
+
+    conf = {'trees':syntax_trees,
+            'grammar': '' if grammar is None else read_file_or_die(grammar),
+            'outdir':assert_dir_exists(outdir),
+            'readtables':usetables,
+            'genimgs':genimgs,
+            'gentables':gentables,
+            'requested_artifacts':requested_artifacts,
+    }
+    
+    if list_artifacts:
+        artifacts(conf)
+    print conf
 
 if __name__ == '__main__':
     main(sys.argv[1:])
