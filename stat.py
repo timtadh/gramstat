@@ -277,7 +277,7 @@ def main(args):
             log('WARNING: -A not yet supported')
             requested_artifacts.update((parse_artspec(arg),))
         elif opt in ('-T', '--usetables'):
-            log('WARNING: -T not yet supported')
+            ### log('WARNING: -T not yet supported')
             usetables = assert_file_exists(arg)
         elif opt in ('-s', '--stdin'):
             stdin = True
