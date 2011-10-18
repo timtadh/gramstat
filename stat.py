@@ -301,7 +301,7 @@ def main(args):
     conf = {'trees':syntax_trees,
             'grammar': '' if grammar is None else read_file_or_die(grammar),
             'outdir':assert_dir_exists(outdir),
-            'readtables':usetables,
+            'loadtables':usetables,
             'genimgs':genimgs,
             'gentables':gentables,
             'requested_artifacts':requested_artifacts,

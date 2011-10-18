@@ -16,16 +16,35 @@ class Registration(object):
 
     def init(self, conf):
         self.basepath = conf['outdir']
+        self.loadtables = conf['loadtables']
 
-    def register(self, type, range=None):
+    def _loadtable(self, name, path, rowloader):
+        if not (os.path.exists(path) and os.path.isfile(path)): return
+        f = open(path, 'r')
+        s = f.read()
+        f.close()
+
+        table = tuple(
+            rowloader(row)
+            for row in s.split('\n') if row
+        )
+        self.tables[name] = table
+
+    def register(self, type, range=None, rowloader=None):
         assert hasattr(self, 'basepath')
         assert type in self.types
         def default_range(conf):
             yield (conf,)
+        def default_rowloader(row):
+            return tuple(col.strip() for col in row.split(','))
         if range is None: range = default_range
+        if rowloader is None: rowloader = default_rowloader
         def dec(f):
             name = f.func_name
             path = os.path.join(self.basepath, name)
+            path += '' if type == 'img' else '.csv'
+            if type == 'table' and self.loadtables:
+                self._loadtable(name, path, rowloader)
             @functools.wraps(f)
             def wrapper(conf):
                 for obj in range(conf):
