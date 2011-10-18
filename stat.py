@@ -21,6 +21,7 @@ error_codes = {
     'no_args':7,
     'bad_artspec':8,
     'bad_file_reads':9,
+    'stdin_and_files':10,
 }
 
 usage_message = \
@@ -94,6 +95,10 @@ Options
                                           are updated. The new tables will only
                                           overwrite the old tables if
                                           "-o <dirname>" == "-T <dirname>"
+    -s, stdin                           accept ASTs on standard in. With blank
+                                          lines seperating trees. If files are
+                                          supplied with this flag it will be an
+                                          error.
 
 Specs
 
@@ -134,7 +139,7 @@ def mktree(s):
             if not line: continue
             if ':' not in line:
                 raise SyntaxError, 'Expected colon, none found.'
-            children, sym = s.split(':', 1)
+            children, sym = line.split(':', 1)
             if not children.isdigit():
                 raise SyntaxError, ( 
                   'Expected the format to be children:label. Where children is '
@@ -152,8 +157,9 @@ def assert_file_exists(path):
     if not os.path.exists(path):
         log('No file found. "%(path)s"' % locals())
         usage(error_codes['file_not_found'])
+    return path
 
-def load_file_or_die(path):
+def read_file_or_die(path):
     '''Reads the file, if there is an error it kills the program.
     @param path : the path to the file
     @returns string : the contents of the file
@@ -166,6 +172,18 @@ def load_file_or_die(path):
         log('Error reading file at "%s".' % path)
         usage(error_codes['bad_file_read'])
     return s
+
+def split_stdin():
+    '''Read the stdin a yield chunks seperated by the blank lines'''
+    lines = list()
+    for line in sys.stdin.read().split('\n'):
+        if not line and lines:
+            yield '\n'.join(lines)
+            lines = list()
+        elif line:
+            lines.append(line)
+    if lines:
+        yield '\n'.join(lines)
 
 def parse_bool(s):
     '''parses s to check it is in [true, false]. returns the appropriate
@@ -206,16 +224,17 @@ def main(args):
     
     try:
         opts, args = getopt(args, 
-            'hvg:o:i:t:aA:T:', 
+            'hvg:o:i:t:aA:T:s', 
             [
               'help', 'version', 'grammar=', 'outdir=', 'imgs=', 'tables=',
-              'artifacts', 'artifact=', 'usetables=',
+              'artifacts', 'artifact=', 'usetables=', 'stdin',
             ]
         )
     except GetoptError, err:
         log(err)
         usage(error_codes['option'])
-        
+    
+    stdin = False
     usetables = False
     outdir = './gramstats'
     grammar = None
@@ -241,13 +260,23 @@ def main(args):
             requested_artifacts.update((parse_artspec(arg),))
         elif opt in ('-T', '--usetables'):
             usetables = assert_file_exists(arg)
+        elif opt in ('-s', '--stdin'):
+            stdin = True
     
-    if (not usetables) and len(args) == 0:
+    if len(args) > 0 and stdin:
+        log('Cannot process both files and stdin, supply one or the other.')
+        usage(error_codes['stdin_and_files'])
+
+    if not ((len(args) != 0) or (usetables) or (stdin)):
         log('You must provide a list of syntax trees to characterize.')
         usage(error_codes['no_args'])
 
     file_paths = [assert_file_exists(arg) for arg in args]
     syntax_trees = [mktree(read_file_or_die(path)) for path in file_paths]
+    if stdin: syntax_trees += [mktree(tree) for tree in split_stdin()]
+    for tree in syntax_trees:
+        print tree
+        print
 
 if __name__ == '__main__':
     main(sys.argv[1:])
