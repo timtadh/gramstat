@@ -262,6 +262,7 @@ def main(args):
         elif opt in ('-v', '--version'):
             version()
         elif opt in ('-g', '--grammar'):
+            log('WARNING: -g not yet supported')
             grammar = assert_file_exists(arg)
         elif opt in ('-o', '--outdir'):
             outdir = assert_file_exists(arg)
@@ -272,8 +273,10 @@ def main(args):
         elif opt in ('-a', '--artifacts'):
             list_artifacts = True
         elif opt in ('-A', '--Artifact'):
+            log('WARNING: -A not yet supported')
             requested_artifacts.update((parse_artspec(arg),))
         elif opt in ('-T', '--usetables'):
+            log('WARNING: -T not yet supported')
             usetables = assert_file_exists(arg)
         elif opt in ('-s', '--stdin'):
             stdin = True
