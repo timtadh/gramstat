@@ -4,7 +4,7 @@
 #Email: tim.tadh@hackthology.com
 #For licensing see the LICENSE file in the top level directory.
 
-import sys, os, subprocess
+import sys, os, subprocess, functools
 
 from reg import registration
 
@@ -20,43 +20,35 @@ def walktrees(trees, process):
     for tree in trees:
         walk(tree)
 
+def save(path, table):
+    fname = path + '.csv'
+    s = '\n'.join( ', '.join(str(col) for col in row) for row in table )
+    f = open(fname, 'w')
+    f.write(s)
+    f.write('\n'*2)
+    f.close()
+    return table
+
 @registration.register('table')
 def symbol_count(path, oldtable, conf):
-    fname = path + '.csv'
     symbols = dict()
-    trees = conf['trees']
-
     walktrees(
-        trees,
+        conf['trees'],
         lambda node:
             symbols.__setitem__(node.label, symbols.get(node.label, 0) + 1)
     )
 
-    s = '\n'.join(
-        ', '.join((name, str(count))) for name, count in symbols.iteritems()
-    )
+    return save(path, tuple((name,count)
+        for name, count in symbols.iteritems()))
 
-    f = open(fname, 'w')
-    f.write(s)
-    f.write('\n'*2)
-    f.close()
 
 @registration.register('table')
 def non_term_count(path, oldtable, conf):
-    fname = path + '.csv'
     symbols = dict()
-    trees = conf['trees']
-
     def callback(node):
         if node.children: symbols[node.label] = symbols.get(node.label, 0) + 1
-    walktrees(trees, callback)
 
-    s = '\n'.join(
-        ', '.join((name, str(count))) for name, count in symbols.iteritems()
-    )
+    walktrees(conf['trees'], callback)
 
-    f = open(fname, 'w')
-    f.write(s)
-    f.write('\n'*2)
-    f.close()
-
+    return save(path, tuple((name,count)
+        for name, count in symbols.iteritems()))
