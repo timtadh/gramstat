@@ -213,7 +213,7 @@ def parse_bool(s):
 
 def show_artifacts(conf):
     '''Print the available artifacts and exit normally.'''
-    for name in artifacts.available_artifacts(conf).keys():
+    for name, d in artifacts.engine.filter_artifacts(conf, artifacts.available_artifacts(conf)):
         log(name)
     sys.exit(0)
 

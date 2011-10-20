@@ -38,3 +38,7 @@ def ast_imgs(outdir, tables, i, tree):
     dot(os.path.join(outdir, str(i)), tree.dotty())
 
 
+@reg.registration.register('img', depends=['symbol_count'])
+def symbol_histogram(path, tables, conf):
+    print path
+    return None

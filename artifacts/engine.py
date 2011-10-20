@@ -21,7 +21,7 @@ def produce(conf):
     options indicated.
     '''
     defered_imports(conf)
-    for f in filter_artifacts(conf, available_artifacts(conf)).itervalues():
+    for name, f in filter_artifacts(conf, available_artifacts(conf)):
         f(conf)
 
 def available_artifacts(conf):
@@ -31,22 +31,61 @@ def available_artifacts(conf):
     @returns : map string -> {'function':f, 'type':type}
     '''
     defered_imports(conf)
-    return dict((name, d)
+    return tuple((name, d)
       for name, d in registration)
 
-def filter_artifacts(conf, artifacts):
-    '''Filter the list of artifacts via the specified configuration.
-    @params conf : The configuration created by stat.py
-    @params artifacts : map string -> {'function':f, 'type':type}
-    @returns : a new map string -> function
-    '''
-    def accept(name, d):
-        if name in conf['requested_artifacts']: return True
-        elif d['type'] == 'img' and conf['genimgs']: return True
-        elif d['type'] == 'table' and conf['gentables']: return True
-        return False
+class filter_artifacts(object):
 
-    return dict((name, d['function'])
-        for name, d in artifacts.iteritems() if accept(name, d))
+    cache = None
+
+    def __new__(cls, conf, artifacts):
+        '''Filter the list of artifacts via the specified configuration.
+        @params conf : The configuration created by stat.py
+        @params artifacts : map string -> {'function':f, 'type':type}
+        @returns : a new map string -> function
+        '''
+        if cls.cache is not None: return cls.cache
+
+        def _reached_by():
+            visited = set()
+            depended_on_by = dict((name, list()) for name, n in artifacts)
+            reached_by = dict((name, list()) for name, n in artifacts)
+
+            for name, n in artifacts:
+                for child in n['depends']:
+                    depended_on_by[child].append(name)
+                    reached_by[child].append(name)
+
+            def visit(name):
+                if name not in visited:
+                    visited.add(name)
+                    for child in depended_on_by[name]:
+                        reached_by[name] += visit(child)
+                return reached_by[name]
+
+            for name, n in artifacts:
+                visit(name)
+
+            return reached_by
+
+        reached_by = _reached_by()
+
+        def accept(d):
+            if d['name'] in conf['requested_artifacts']: return True
+            elif d['type'] == 'img' and conf['genimgs']: return True
+            elif d['type'] == 'table' and conf['gentables']: return True
+            return False
+
+        def dependency(name, required):
+            for req in required:
+                if req in reached_by[name]:
+                    return True
+            return False
+
+        required = set(name for name, d in artifacts if accept(d))
+        cls.cache = tuple((name, d['function'])
+            for name, d in artifacts if accept(d) or dependency(name, required))
+        return cls.cache
+
 
 

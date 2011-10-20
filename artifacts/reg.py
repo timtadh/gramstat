@@ -30,7 +30,7 @@ class Registration(object):
         )
         self.tables[name] = table
 
-    def register(self, type, range=None, rowloader=None):
+    def register(self, type, range=None, rowloader=None, depends=None):
         assert hasattr(self, 'basepath')
         assert type in self.types
         def default_range(conf):
@@ -39,6 +39,7 @@ class Registration(object):
             return tuple(col.strip() for col in row.split(','))
         if range is None: range = default_range
         if rowloader is None: rowloader = default_rowloader
+        if depends is None: depends = list()
 
         def dec(f):
             name = f.func_name
@@ -58,13 +59,38 @@ class Registration(object):
                         self.tables[name] = f(path, self.tables[name], *obj)
                     else:
                         raise Exception, 'Should be unreachable.'
-            self._d.update({name:{'type':type, 'function':wrapper}})
+            self._d.update({
+                    name: {
+                        'name':name,
+                        'type':type,
+                        'function':wrapper,
+                        'depends':depends,
+                    }})
             return wrapper
 
         return dec
 
     def __iter__(self):
-        for key,val in self._d.iteritems(): yield key,val
+
+        ## This computes a topological sort of the dependency graph so we can
+        ## visit the functions in the correct order.
+        visited = set()
+        order = list()
+        def visit(n):
+            if n['name'] not in visited:
+                visited.add(n['name'])
+                for m in n['depends']:
+                    if m not in self._d:
+                        raise Exception, (
+                            "Could not find dependency '%s' of artifact '%s'"
+                        ) % (m, n['name'])
+                    visit(self._d[m])
+                order.append(n)
+
+        for n in self._d.itervalues():
+            visit(n)
+
+        for n in order: yield n['name'], n
 
 registration = Registration()
 
