@@ -17,6 +17,8 @@ class Registration(object):
     def init(self, conf):
         self.basepath = conf['outdir']
         self.loadtables = conf['loadtables']
+        self.loadpath = conf['loadpath']
+        self.requested = conf['requested_artifacts']
 
     def _loadtable(self, name, path, rowloader):
         if not (os.path.exists(path) and os.path.isfile(path)): return
@@ -43,10 +45,14 @@ class Registration(object):
 
         def dec(f):
             name = f.func_name
+
             path = os.path.join(self.basepath, name)
             path += '' if type == 'img' else '.csv'
+            if name in self.requested:
+                path = self.requested[name]
             if type == 'table' and self.loadtables:
-                self._loadtable(name, path, rowloader)
+                loadpath = os.path.join(self.loadpath, name) + '.csv'
+                self._loadtable(name, loadpath, rowloader)
 
             @functools.wraps(f)
             def wrapper(conf):

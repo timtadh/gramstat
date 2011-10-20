@@ -32,7 +32,7 @@ def available_artifacts(conf):
     '''
     defered_imports(conf)
     return tuple((name, d)
-      for name, d in registration)
+        for name, d in registration)
 
 class filter_artifacts(object):
 
@@ -47,6 +47,10 @@ class filter_artifacts(object):
         if cls.cache is not None: return cls.cache
 
         def _reached_by():
+            '''Computes the inverse transitive closure of the dependency graph
+            so we can check if a particular artifact is being depended on by a
+            required artifact.
+            '''
             visited = set()
             depended_on_by = dict((name, list()) for name, n in artifacts)
             reached_by = dict((name, list()) for name, n in artifacts)
@@ -68,23 +72,25 @@ class filter_artifacts(object):
 
             return reached_by
 
-        reached_by = _reached_by()
-
-        def accept(d):
+        def isrequired(d):
+            '''Is this a required object?'''
             if d['name'] in conf['requested_artifacts']: return True
             elif d['type'] == 'img' and conf['genimgs']: return True
             elif d['type'] == 'table' and conf['gentables']: return True
             return False
 
-        def dependency(name, required):
+        def isdependency(name, required):
+            '''Do any of the required artifacts depend on this one?'''
             for req in required:
                 if req in reached_by[name]:
                     return True
             return False
 
-        required = set(name for name, d in artifacts if accept(d))
+        reached_by = _reached_by()
+        required = set(name for name, d in artifacts if isrequired(d))
         cls.cache = tuple((name, d['function'])
-            for name, d in artifacts if accept(d) or dependency(name, required))
+            for name, d in artifacts if isrequired(d) or isdependency(name, required))
+
         return cls.cache
 
 

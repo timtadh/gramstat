@@ -232,7 +232,7 @@ def parse_artspec(s):
         log('Expecting an <artspec> got "%s"' % (s))
         usage(error_codes['bad_artspec'])
     name, path = s.split(':', 1)
-    return name, path
+    return name, os.path.abspath(path)
 
 def main(args):
 
@@ -252,6 +252,7 @@ def main(args):
     stdin = False
     usetables = False
     outdir = './gramstats'
+    loadpath = None
     grammar = None
     genimgs = True
     gentables = True
@@ -274,11 +275,12 @@ def main(args):
         elif opt in ('-a', '--artifacts'):
             list_artifacts = True
         elif opt in ('-A', '--Artifact'):
-            log('WARNING: -A not yet supported')
+            #log('WARNING: -A not yet supported')
             requested_artifacts.update((parse_artspec(arg),))
         elif opt in ('-T', '--usetables'):
             ### log('WARNING: -T not yet supported')
-            usetables = assert_file_exists(arg)
+            loadpath = assert_file_exists(arg)
+            usetables = True
         elif opt in ('-s', '--stdin'):
             stdin = True
 
@@ -302,6 +304,7 @@ def main(args):
             'grammar': '' if grammar is None else read_file_or_die(grammar),
             'outdir':assert_dir_exists(outdir),
             'loadtables':usetables,
+            'loadpath':loadpath,
             'genimgs':genimgs,
             'gentables':gentables,
             'requested_artifacts':requested_artifacts,
