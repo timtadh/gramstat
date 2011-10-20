@@ -42,14 +42,12 @@ def ast_imgs(outdir, tables, i, tree):
         os.mkdir(outdir)
     dot(os.path.join(outdir, str(i)), tree.dotty())
 
-
-@reg.registration.register('img', depends=['symbol_count'])
-def symbol_histogram(path, tables, conf):
+def create_histogram(title, path, table):
     fname = path + '.png'
-    symbol_count = list(tables['symbol_count'])
-    symbol_count.sort(key=lambda x: x[1])
-    symbol_count.reverse()
-    y = np.array([count for name, count in symbol_count])
+    table = list(table)
+    table.sort(key=lambda x: x[1])
+    table.reverse()
+    y = np.array([count for name, count in table])
     #y = y
 
     fig = plt.figure()
@@ -60,13 +58,26 @@ def symbol_histogram(path, tables, conf):
 
     ax.set_xlabel('Symbols')
     ax.set_ylabel('Number of Appearances')
-    labels = tuple(name for name, count in symbol_count)
+    labels = tuple(name for name, count in table)
     ax.set_xlim(0, len(x))
     ax.set_xticklabels(labels, clip_on=False)
     xaxis = ax.get_xaxis()
     xaxis.set_ticks([i+.4 for i in xrange(0, len(y))])
     xaxis.set_ticklabels(labels)
 
+    fig.suptitle(title)
     fig.set_size_inches(int(len(y)*.75 + .5), 10)
     fig.savefig(fname, format='png')
-    return None
+
+
+@reg.registration.register('img', depends=['symbol_count'])
+def symbol_histogram(path, tables, conf):
+    create_histogram('All Symbols', path, tables['symbol_count'])
+
+@reg.registration.register('img', depends=['term_count'])
+def term_histogram(path, tables, conf):
+    create_histogram('Terminal Symbols', path, tables['term_count'])
+
+@reg.registration.register('img', depends=['non_term_count'])
+def nonterm_histogram(path, tables, conf):
+    create_histogram('Non-Terminal Symbols', path, tables['non_term_count'])
