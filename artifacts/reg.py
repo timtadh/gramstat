@@ -62,7 +62,8 @@ class Registration(object):
                     elif type == 'table':
                         if name not in self.tables:
                             self.tables[name] = None
-                        self.tables[name] = f(path, self.tables[name], *obj)
+                        oldtable = self.tables[name]
+                        self.tables[name] = f(path, oldtable, self.tables, *obj)
                     else:
                         raise Exception, 'Should be unreachable.'
             self._d.update({

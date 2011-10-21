@@ -42,25 +42,25 @@ def symcount_rowloader(row):
     return (name, int(count))
 
 @registration.register('table', rowloader=symcount_rowloader)
-def symbol_count(path, oldtable, conf):
+def symbol_count(path, oldtable, tables, conf):
     def callback(symbols, node):
         symbols[node.label] = symbols.get(node.label, 0) + 1
     return symbol_counter(path, oldtable, conf['trees'], callback)
 
 @registration.register('table', rowloader=symcount_rowloader)
-def non_term_count(path, oldtable, conf):
+def non_term_count(path, oldtable, tables, conf):
     def callback(symbols, node):
         if node.children: symbols[node.label] = symbols.get(node.label, 0) + 1
     return symbol_counter(path, oldtable, conf['trees'], callback)
 
 @registration.register('table', rowloader=symcount_rowloader)
-def term_count(path, oldtable, conf):
+def term_count(path, oldtable, tables, conf):
     def callback(symbols, node):
         if not node.children: symbols[node.label] = symbols.get(node.label, 0) + 1
     return symbol_counter(path, oldtable, conf['trees'], callback)
 
 @registration.register('table')
-def infer_grammar(path, oldtable, conf):
+def infer_grammar(path, oldtable, tables, conf):
     productions = dict()
     if oldtable is not None:
         productions.update(
@@ -80,3 +80,31 @@ def infer_grammar(path, oldtable, conf):
         for nonterm, P in productions.iteritems()
     )
     save(path, table)
+    return table
+
+@registration.register('table', depends=['infer_grammar'])
+def production_count(path, oldtable, tables, conf):
+    grammar = dict((row[0], tuple(row[1:])) for row in tables['infer_grammar'])
+    stats = dict()
+    for nonterm, P in grammar.iteritems():
+        for i, p in enumerate(P):
+            stats[(nonterm, i+1)] = 0
+    ## TODO: oldtable loading.
+
+    def callback(grammar, stats, node):
+        if not node.children: return
+        productions = grammar[node.label]
+        p = productions.index(':'.join(kid.label for kid in node.children)) + 1
+        stats[(node.label, p)] += 1
+    walktrees(conf['trees'], functools.partial(callback, grammar, stats))
+
+    for row in stats.iteritems():
+        print row[0], row[1]
+
+    table = [
+        (key[0], grammar[key[0]][key[1]-1], count)
+        for key, count in stats.iteritems()
+    ]
+    table.sort(key=lambda x: (x[0], x[2]))
+    save(path, table)
+
