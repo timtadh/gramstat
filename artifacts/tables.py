@@ -73,11 +73,10 @@ def infer_grammar(path, oldtable, conf):
         p = productions.get(node.label, set())
         p.add(tuple(kid.label for kid in node.children))
         productions[node.label] = p
-
     walktrees(conf['trees'], functools.partial(callback, productions))
+
     table = tuple(
         tuple([nonterm] + [':'.join(p) for p in P])
         for nonterm, P in productions.iteritems()
     )
-
     save(path, table)
