@@ -58,3 +58,26 @@ def term_count(path, oldtable, conf):
     def callback(symbols, node):
         if not node.children: symbols[node.label] = symbols.get(node.label, 0) + 1
     return symbol_counter(path, oldtable, conf['trees'], callback)
+
+@registration.register('table')
+def infer_grammar(path, oldtable, conf):
+    productions = dict()
+    if oldtable is not None:
+        productions.update(
+            (row[0], set(tuple(e for e in col.split(':')) for col in row[1:]))
+                for row in oldtable
+        )
+
+    def callback(productions, node):
+        if not node.children: return
+        p = productions.get(node.label, set())
+        p.add(tuple(kid.label for kid in node.children))
+        productions[node.label] = p
+
+    walktrees(conf['trees'], functools.partial(callback, productions))
+    table = tuple(
+        tuple([nonterm] + [':'.join(p) for p in P])
+        for nonterm, P in productions.iteritems()
+    )
+
+    save(path, table)
