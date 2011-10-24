@@ -2,4 +2,5 @@
 *.swp
 test.ast
 gramstats
+env
 
