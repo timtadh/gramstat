@@ -50,7 +50,7 @@ Usage
                                 /    \
                         left side      right side
                         /    \         /    |    \
-                    x      y       a     b     c
+                       x      y       a     b     c
                             |
                             z
 
