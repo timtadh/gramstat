@@ -134,8 +134,6 @@ def tree_number(path, oldtable, tables, conf):
         walktree(tree, c)
         numbers.append(c.number())
 
-
-
     table = tuple((i, n) for i, n in enumerate(numbers))
     save(path, table)
     return table

@@ -4,10 +4,12 @@
 #Email: tim.tadh@hackthology.com
 #For licensing see the LICENSE file in the top level directory.
 
-import sys, os, subprocess
+import sys, os, subprocess, math
+from decimal import Decimal as dec
 
 import reg
 import numpy as np
+from scipy import stats
 import matplotlib.pyplot as plt
 import matplotlib.mlab as mlab
 
@@ -90,3 +92,34 @@ def production_histogram(path, tables, conf):
         for nonterm, p, count in tables['production_count']
     ]
     create_histogram('Productions', path, table, 2, [0.05, .2, 0.90, 0.7])
+
+@reg.registration.register('img', depends=['tree_number'])
+def normal_probability_plot(path, tables, conf):
+    fname = path + '.png'
+    treenums = tables['tree_number']
+    x = sorted([float(dec(num).log10().log10()) for ast, num in treenums])
+    y = [100.0*((j - 0.5)/float(len(x))) for j in xrange(1, len(x)+1)]
+
+    coefficients = np.polyfit(x, y, 1)
+    polynomial = np.poly1d(coefficients)
+    ys = polynomial(x)
+
+    fig = plt.figure()
+    #fig.ylim(0, 100)
+    #print dir(fig)
+    ax = fig.add_axes([0.1, 0.1, 0.8, 0.8])
+    print stats.probplot(x, dist='norm', plot=plt)
+    ##ax.plot(x, y, 'o')
+    #ax.plot(x, ys)
+    #ax.xaxis.set_label_text('x(j)')
+    #ax.yaxis.set_label_text('100*(j - .5)/N')
+    #print dir(ax.yaxis)
+    #ax.yaxis.limit_range_for_scale(0, 100)
+    #ax.xlim(174,222)
+    #ax.set_ylim(0,100)
+    #ax.ylabel('y')
+    #ax.xlabel('x')
+    #ax.set_yscale('log')
+    plt.savefig(fname, format='png')
+    for i in x:
+        print i

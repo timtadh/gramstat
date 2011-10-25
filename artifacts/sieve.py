@@ -17,7 +17,6 @@ class Sieve:
             self.last += self.n
         return (self.last == i)
 
-
 def find_primes():
     sieves = deque()
 
