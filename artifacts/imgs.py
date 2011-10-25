@@ -4,7 +4,7 @@
 #Email: tim.tadh@hackthology.com
 #For licensing see the LICENSE file in the top level directory.
 
-import sys, os, subprocess, math
+import sys, os, subprocess, math, warnings
 from decimal import Decimal as dec
 
 import reg
@@ -103,23 +103,7 @@ def normal_probability_plot(path, tables, conf):
     coefficients = np.polyfit(x, y, 1)
     polynomial = np.poly1d(coefficients)
     ys = polynomial(x)
-
-    fig = plt.figure()
-    #fig.ylim(0, 100)
-    #print dir(fig)
-    ax = fig.add_axes([0.1, 0.1, 0.8, 0.8])
-    print stats.probplot(x, dist='norm', plot=plt)
-    ##ax.plot(x, y, 'o')
-    #ax.plot(x, ys)
-    #ax.xaxis.set_label_text('x(j)')
-    #ax.yaxis.set_label_text('100*(j - .5)/N')
-    #print dir(ax.yaxis)
-    #ax.yaxis.limit_range_for_scale(0, 100)
-    #ax.xlim(174,222)
-    #ax.set_ylim(0,100)
-    #ax.ylabel('y')
-    #ax.xlabel('x')
-    #ax.set_yscale('log')
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore")
+        stats.probplot(x, dist='norm', plot=plt)
     plt.savefig(fname, format='png')
-    for i in x:
-        print i
