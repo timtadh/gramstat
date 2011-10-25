@@ -86,10 +86,14 @@ def infer_grammar(path, oldtable, tables, conf):
 def production_count(path, oldtable, tables, conf):
     grammar = dict((row[0], tuple(row[1:])) for row in tables['infer_grammar'])
     stats = dict()
+    prodnum = dict()
     for nonterm, P in grammar.iteritems():
         for i, p in enumerate(P):
+            prodnum[(nonterm, p)] = i+1
             stats[(nonterm, i+1)] = 0
-    ## TODO: oldtable loading.
+    if oldtable is not None:
+        for nonterm, p, count in oldtable:
+            stats[(nonterm, prodnum[(nonterm, p)])] = int(count)
 
     def callback(grammar, stats, node):
         if not node.children: return
@@ -97,9 +101,6 @@ def production_count(path, oldtable, tables, conf):
         p = productions.index(':'.join(kid.label for kid in node.children)) + 1
         stats[(node.label, p)] += 1
     walktrees(conf['trees'], functools.partial(callback, grammar, stats))
-
-    for row in stats.iteritems():
-        print row[0], row[1]
 
     table = [
         (key[0], grammar[key[0]][key[1]-1], count)
