@@ -7,18 +7,20 @@
 import sys, os, subprocess, functools
 
 from reg import registration
+import sieve
+
+def walktree(root, process):
+    stack = list()
+    stack.append(root)
+    while stack:
+        node = stack.pop()
+        process(node)
+        for child in node.children:
+            stack.append(child)
 
 def walktrees(trees, process):
-    def walk(root):
-        stack = list()
-        stack.append(root)
-        while stack:
-            node = stack.pop()
-            process(node)
-            for child in node.children:
-                stack.append(child)
     for tree in trees:
-        walk(tree)
+        walk(tree, process)
 
 def save(path, table):
     s = '\n'.join( ', '.join(str(col) for col in row) for row in table )
@@ -107,5 +109,33 @@ def production_count(path, oldtable, tables, conf):
         for key, count in stats.iteritems()
     ]
     table.sort(key=lambda x: (x[0], x[2]))
+    save(path, table)
+    return table
+
+@registration.register('table')
+def tree_number(path, oldtable, tables, conf):
+
+    class callback(object):
+
+        def __init__(self):
+            self.acc = 1
+            self.primes = sieve.find_primes()
+
+        def __call__(self, node):
+            self.acc *= self.primes.next()**(len(node.children))
+
+        def number(self):
+            return self.acc
+
+    numbers = list()
+    trees = conf['trees']
+    for tree in trees:
+        c = callback()
+        walktree(tree, c)
+        numbers.append(c.number())
+
+
+
+    table = tuple((i, n) for i, n in enumerate(numbers))
     save(path, table)
     return table
