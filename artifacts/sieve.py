@@ -1,5 +1,6 @@
 # Author: Stephen Johnson
 # Email: stephen.johnson.public@gmail.com
+# License: In the public domain. (As placed by the author)
 # O(n*log(n)) infinite version
 
 from collections import deque

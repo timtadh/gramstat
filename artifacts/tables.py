@@ -20,7 +20,7 @@ def walktree(root, process):
 
 def walktrees(trees, process):
     for tree in trees:
-        walk(tree, process)
+        walktree(tree, process)
 
 def save(path, table):
     s = '\n'.join( ', '.join(str(col) for col in row) for row in table )
