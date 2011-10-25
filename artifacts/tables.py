@@ -108,4 +108,4 @@ def production_count(path, oldtable, tables, conf):
     ]
     table.sort(key=lambda x: (x[0], x[2]))
     save(path, table)
-
+    return table

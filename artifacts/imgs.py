@@ -42,7 +42,8 @@ def ast_imgs(outdir, tables, i, tree):
         os.mkdir(outdir)
     dot(os.path.join(outdir, str(i)), tree.dotty())
 
-def create_histogram(title, path, table):
+def create_histogram(title, path, table, height=1, shape=None):
+    if shape is None: shape = [0.05, .1, 0.90, 0.8]
     fname = path + '.png'
     table = list(table)
     table.sort(key=lambda x: x[1])
@@ -51,7 +52,7 @@ def create_histogram(title, path, table):
     #y = y
 
     fig = plt.figure()
-    ax = fig.add_axes([0.05, .1, 0.90, 0.8])
+    ax = fig.add_axes(shape)
 
     x = [i for i in xrange(0, len(y))]
     rects1 = ax.bar(x, y, color='r')
@@ -66,7 +67,7 @@ def create_histogram(title, path, table):
     xaxis.set_ticklabels(labels)
 
     fig.suptitle(title)
-    fig.set_size_inches(int(len(y)*.75 + .5), 10)
+    fig.set_size_inches(int(len(y)*1.2 + .5), 10*height)
     fig.savefig(fname, format='png')
 
 
@@ -81,3 +82,11 @@ def term_histogram(path, tables, conf):
 @reg.registration.register('img', depends=['non_term_count'])
 def nonterm_histogram(path, tables, conf):
     create_histogram('Non-Terminal Symbols', path, tables['non_term_count'])
+
+@reg.registration.register('img', depends=['production_count'])
+def production_histogram(path, tables, conf):
+    table = [
+        (nonterm + ' =\n' + '\n'.join(c for c in p.split(':')), int(count))
+        for nonterm, p, count in tables['production_count']
+    ]
+    create_histogram('Productions', path, table, 2, [0.05, .2, 0.90, 0.7])
