@@ -129,11 +129,17 @@ def production_probability(path, oldtable, tables, conf):
         collect[nonterm] = prods
 
     probabilities = dict(
-        (nonterm, dict(
-            (name, float(count)/float(sum(
-               count for count in prods.itervalues()
-            ))) for name, count in prods.iteritems()
-        )) for nonterm, prods in collect.iteritems()
+        (
+          nonterm,
+          dict(
+            (
+              name,
+              float(count)/float(sum(count for count in prods.itervalues()))
+            )
+            for name, count in prods.iteritems()
+          )
+        )
+        for nonterm, prods in collect.iteritems()
     )
 
     table = tuple(
