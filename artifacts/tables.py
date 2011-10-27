@@ -112,6 +112,39 @@ def production_count(path, oldtable, tables, conf):
     save(path, table)
     return table
 
+@registration.register('table', depends=['production_count', 'infer_grammar'])
+def production_probability(path, oldtable, tables, conf):
+    grammar = dict((row[0], tuple(row[1:])) for row in tables['infer_grammar'])
+    pcount = tuple(tables['production_count'])
+    collect = dict()
+
+    prodnum = dict()
+    for nonterm, P in grammar.iteritems():
+        for i, p in enumerate(P):
+            prodnum[(nonterm, p)] = i+1
+
+    for nonterm, p, count in pcount:
+        prods = collect.get(nonterm, dict())
+        prods[p] = count
+        collect[nonterm] = prods
+
+    probabilities = dict(
+        (nonterm, dict(
+            (name, float(count)/float(sum(
+               count for count in prods.itervalues()
+            ))) for name, count in prods.iteritems()
+        )) for nonterm, prods in collect.iteritems()
+    )
+
+    table = tuple(
+        (nonterm, production, probability)
+        for nonterm, prods in probabilities.iteritems()
+            for production, probability in prods.iteritems()
+    )
+
+    save(path, table)
+    return table
+
 @registration.register('table')
 def tree_number(path, oldtable, tables, conf):
 
