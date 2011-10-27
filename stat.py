@@ -104,6 +104,9 @@ Options
     -A, artifact=<artspec>              generate a specific artifact only.
                                           Multiple '-A' flags allowed.
                                           [overrides -o,-i, and -t]
+    -E, exclude=<artifact>              exclude an artifact. This has no effect
+                                          if another artifact (which is set to
+                                          be generated depends on this artifact)
     -T, usetables=<directory>           look for pre-existing statistic tables
                                           in this directory. With this option
                                           no other files are required, however
@@ -254,10 +257,10 @@ def main(args):
     try:
         opts, args = getopt(
             args,
-            'hvg:o:i:t:aA:T:s',
+            'hvg:o:i:t:aA:T:sE:',
             [
               'help', 'version', 'grammar=', 'outdir=', 'imgs=', 'tables=',
-              'artifacts', 'artifact=', 'usetables=', 'stdin',
+              'artifacts', 'artifact=', 'usetables=', 'stdin', 'exclude',
             ]
         )
     except GetoptError, err:
@@ -272,6 +275,7 @@ def main(args):
     genimgs = True
     gentables = True
     requested_artifacts = dict()
+    excluded = list()
     list_artifacts = False
     for opt, arg in opts:
         if opt in ('-h', '--help'):
@@ -292,6 +296,9 @@ def main(args):
         elif opt in ('-A', '--Artifact'):
             #log('WARNING: -A not yet supported')
             requested_artifacts.update((parse_artspec(arg),))
+        elif opt in ('-E', '--exclude'):
+            #log('WARNING: -A not yet supported')
+            excluded.append(arg)
         elif opt in ('-T', '--usetables'):
             ### log('WARNING: -T not yet supported')
             loadpath = assert_file_exists(arg)
@@ -323,6 +330,7 @@ def main(args):
             'genimgs':genimgs,
             'gentables':gentables,
             'requested_artifacts':requested_artifacts,
+            'excluded_artifacts':excluded,
     }
 
     if list_artifacts:
