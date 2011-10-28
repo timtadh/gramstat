@@ -4,19 +4,23 @@
 #Email: tim.tadh@hackthology.com
 #For licensing see the LICENSE file in the top level directory.
 
-import sys, os, subprocess, functools
+import sys, os, subprocess, functools, collections
 
 from reg import registration
 import sieve
 
-def walktree(root, process):
+def walktree(root, process=None, finalize=None):
+    def default(*args):
+        pass
     stack = list()
-    stack.append(root)
-    while stack:
-        node = stack.pop()
-        process(node)
-        for child in node.children:
-            stack.append(child)
+    if finalize is None: finalize = default
+    if process is None: process = default
+    #stack.append((root, functools.partial(finalize, root)))
+    def visit(node, depth):
+        process(node, depth)
+        child_results = [visit(child, depth+1) for child in node.children]
+        return finalize(node, depth, child_results)
+    return visit(root, 1)
 
 def walktrees(trees, process):
     for tree in trees:
@@ -45,19 +49,19 @@ def symcount_rowloader(row):
 
 @registration.register('table', rowloader=symcount_rowloader)
 def symbol_count(path, oldtable, tables, conf):
-    def callback(symbols, node):
+    def callback(symbols, node, depth):
         symbols[node.label] = symbols.get(node.label, 0) + 1
     return symbol_counter(path, oldtable, conf['trees'], callback)
 
 @registration.register('table', rowloader=symcount_rowloader)
 def non_term_count(path, oldtable, tables, conf):
-    def callback(symbols, node):
+    def callback(symbols, node, depth):
         if node.children: symbols[node.label] = symbols.get(node.label, 0) + 1
     return symbol_counter(path, oldtable, conf['trees'], callback)
 
 @registration.register('table', rowloader=symcount_rowloader)
 def term_count(path, oldtable, tables, conf):
-    def callback(symbols, node):
+    def callback(symbols, node, depth):
         if not node.children: symbols[node.label] = symbols.get(node.label, 0) + 1
     return symbol_counter(path, oldtable, conf['trees'], callback)
 
@@ -70,7 +74,7 @@ def infer_grammar(path, oldtable, tables, conf):
                 for row in oldtable
         )
 
-    def callback(productions, node):
+    def callback(productions, node, depth):
         if not node.children: return
         p = productions.get(node.label, set())
         p.add(tuple(kid.label for kid in node.children))
@@ -97,7 +101,7 @@ def production_count(path, oldtable, tables, conf):
         for nonterm, p, count in oldtable:
             stats[(nonterm, prodnum[(nonterm, p)])] = int(count)
 
-    def callback(grammar, stats, node):
+    def callback(grammar, stats, node, depth):
         if not node.children: return
         productions = grammar[node.label]
         p = productions.index(':'.join(kid.label for kid in node.children)) + 1
@@ -151,6 +155,48 @@ def production_probability(path, oldtable, tables, conf):
     save(path, table)
     return table
 
+
+@registration.register('table')
+def prod_3grams(path, oldtable, tables, conf):
+    trees = conf['trees']
+
+    class Callback(object):
+
+        def __init__(self, N):
+            self.N = N
+            self.grams = set()
+
+        def __call__(self, node, depth, child_results):
+            mygrams = set(((node.label, ), ))
+            for child in child_results:
+                for gram in child:
+                    if len(gram) < self.N:
+                        newgram = tuple([node.label] + list(gram))
+                    else:
+                        assert len(gram) == self.N
+                        newgram = tuple([node.label] + list(gram[:-1]))
+                    if len(newgram) == self.N:
+                        self.grams.add(newgram)
+                    mygrams.add(newgram)
+            return mygrams
+
+    grams = list()
+    for tree in trees:
+        cback = Callback(3)
+        walktree(tree, finalize=cback)
+        grams.append(cback.grams)
+
+    table = [
+      [X] + list(Z)
+      for X, Y in enumerate(grams)
+      for Z in Y
+    ]
+    for x in xrange(len(table[0])-1, -1, -1):
+        table.sort(key=lambda row: row[x])
+    save(path, table)
+    return table
+
+
 @registration.register('table')
 def tree_number(path, oldtable, tables, conf):
 
@@ -160,7 +206,7 @@ def tree_number(path, oldtable, tables, conf):
             self.acc = 1
             self.primes = sieve.find_primes()
 
-        def __call__(self, node):
+        def __call__(self, node, depth):
             self.acc *= self.primes.next()**(len(node.children))
 
         def number(self):
