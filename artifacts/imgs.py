@@ -99,6 +99,7 @@ def normal_probability_plot(path, tables, conf):
     treenums = tables['tree_number']
     x = sorted([float(dec(num).log10()) for ast, num in treenums])
     y = [100.0*((j - 0.5)/float(len(x))) for j in xrange(1, len(x)+1)]
+    plt.clf()
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
         stats.probplot(x, dist='norm', plot=plt)
