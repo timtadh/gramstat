@@ -72,6 +72,29 @@ Explanation
                           |
                           z
 
+    Coverage [the -c or --coverage] option allow the user to supply coverage
+    information in addition to the AST. The coverage information is statement
+    level coverage of the result of the input being run through its intended
+    program. By default the program looks for files which end in
+    '$FILE.coverage', where $FILE is the associated AST. eg.
+
+        If the program is run with
+
+            ./stat.py -c `find test/ex -name '*.ast'`
+
+        It would look for
+
+            $ find test/ex/ -name "*.ast" | sed 's/\.ast/.coverage/'
+            test/ex/29.sl.coverage
+            test/ex/22.sl.coverage
+            test/ex/10.sl.coverage
+            test/ex/5.sl.coverage
+            test/ex/28.sl.coverage
+            test/ex/1.sl.coverage
+            ...
+
+
+
 Options
 
     -h, help                            print this message
@@ -92,6 +115,10 @@ Options
     -E, exclude=<artifact>              exclude an artifact. This has no effect
                                           if another artifact (which is set to
                                           be generated depends on this artifact)
+    -c, --coverage                      look for ".coverage" files (see
+                                          explanation section for details) to
+                                          supply coverage information for each
+                                          AST.
     -T, usetables=<directory>           look for pre-existing statistic tables
                                           in this directory. With this option
                                           no other files are required, however
@@ -244,10 +271,11 @@ def main(args):
     try:
         opts, args = getopt(
             args,
-            'hvg:o:i:t:aA:T:sE:',
+            'hvg:o:i:t:aA:T:sE:c',
             [
               'help', 'version', 'grammar=', 'outdir=', 'imgs=', 'tables=',
               'artifacts', 'artifact=', 'usetables=', 'stdin', 'exclude',
+              'coverage',
             ]
         )
     except GetoptError, err:
@@ -280,6 +308,8 @@ def main(args):
             gentables = parse_bool(arg)
         elif opt in ('-a', '--artifacts'):
             list_artifacts = True
+        elif opt in ('-c', '--coverage'):
+            log('WARNING: -c not yet supported')
         elif opt in ('-A', '--Artifact'):
             #log('WARNING: -A not yet supported')
             requested_artifacts.update((parse_artspec(arg),))
