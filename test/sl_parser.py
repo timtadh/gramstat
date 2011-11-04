@@ -293,10 +293,16 @@ if __name__ == '__main__':
             cov.load()
             find = subprocess.Popen(
                 ['find', slang_loc, '-name', '*.py'],
-                stdin=subprocess.PIPE, stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE
+                stdin=subprocess.PIPE, stdout=subprocess.PIPE
             )
-            slang_files = [f for f in find.communicate('')[0].split('\n') if f]
+            grep = subprocess.Popen(
+                ['grep', '-v', '/t_[^/]*'],
+                stdin=subprocess.PIPE, stdout=subprocess.PIPE
+            )
+            slang_files = [f
+              for f in grep.communicate(find.communicate('')[0])[0].split('\n')
+              if f
+            ]
 
             table = [[os.path.relpath(name, slang_loc)] + \
                 [len(cov.analysis(name)[1])] + \
