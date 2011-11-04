@@ -4,7 +4,7 @@
 #Email: tim.tadh@hackthology.com
 #For licensing see the LICENSE file in the top level directory.
 
-import os, sys, traceback
+import os, sys, traceback, subprocess, itertools
 
 from ply import yacc
 from sl_lexer import tokens, Lexer
@@ -255,11 +255,41 @@ def parse(s):
     return Parser().parse(s, lexer=Lexer())
 
 if __name__ == '__main__':
-    if not sys.argv[1:]: sys.exit(1)
-    file_names = [os.path.abspath(s) for s in sys.argv[1:]]
-    trees = [parse(read(path)) for path in file_names]
+    if not sys.argv[2:]: sys.exit(1)
+    slang_loc = sys.argv[1]
+    file_names = [os.path.abspath(s) for s in sys.argv[2:]]
+    files = [read(path) for path in file_names]
+    trees = [parse(text) for text in files]
     for tree in trees:
         print tree
         print
         print
 
+    print slang_loc
+    erase = subprocess.Popen(['coverage', 'erase'])
+    erase.wait()
+    slang = subprocess.Popen(['coverage', 'run', os.path.join(slang_loc, 'slang'), '--stdin'],
+          stdin=subprocess.PIPE)
+    slang.communicate(files[0])
+    os.unlink('a.out')
+    os.unlink('a.out.o')
+
+    import coverage
+    cov = coverage.coverage()
+    cov.load()
+    print ' '.join(['find', slang_loc, '-name', '"*.py"'])
+    find = subprocess.Popen(['find', slang_loc, '-name', '*.py'],
+          stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    slang_files = [f for f in find.communicate('')[0].split('\n') if f]
+
+    def rnge(start, end=None):
+        if end is None:
+            return [start]
+        return list(xrange(start, end+1))
+    name = '../slang/slang'
+    table = [[os.path.relpath(name, slang_loc)] + \
+        sorted(list(set(cov.analysis(name)[1]) - set(cov.analysis(name)[2])))
+      for name in slang_files
+    ]
+    for row in table:
+        print row
