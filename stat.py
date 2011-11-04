@@ -102,7 +102,9 @@ Options
     -s, stdin                           accept ASTs on standard in. With blank
                                           lines seperating trees. If files are
                                           supplied with this flag it will be an
-                                          error.
+                                          error. Unfortunately you cannot
+                                          provide coverage information in this
+                                          mode.
 
 Specs
 
