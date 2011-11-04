@@ -74,7 +74,8 @@ class filter_artifacts(object):
 
         def isrequired(d):
             '''Is this a required object?'''
-            if d['name'] in conf['requested_artifacts']: return True
+            if d['name'] in conf['excluded_artifacts']: return False
+            elif d['name'] in conf['requested_artifacts']: return True
             elif d['type'] == 'img' and conf['genimgs']: return True
             elif d['type'] == 'table' and conf['gentables']: return True
             return False

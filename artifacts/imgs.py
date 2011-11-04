@@ -93,6 +93,14 @@ def production_histogram(path, tables, conf):
     ]
     create_histogram('Productions', path, table, 2, [0.05, .2, 0.90, 0.7])
 
+@reg.registration.register('img', depends=['production_probability'])
+def production_probability_histogram(path, tables, conf):
+    table = [
+        (nonterm + ' =\n' + '\n'.join(c for c in p.split(':')), float(count))
+        for nonterm, p, count in tables['production_probability']
+    ]
+    create_histogram('Productions', path, table, 2, [0.05, .2, 0.90, 0.7])
+
 @reg.registration.register('img', depends=['tree_number'])
 def normal_probability_plot(path, tables, conf):
     fname = path + '.png'
