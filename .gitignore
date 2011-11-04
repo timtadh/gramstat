@@ -3,4 +3,6 @@
 test.ast
 gramstats
 env
+*.ast
+*.coverage
 

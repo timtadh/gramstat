@@ -4,8 +4,9 @@
 #Email: tim.tadh@hackthology.com
 #For licensing see the LICENSE file in the top level directory.
 
-import os, sys, traceback, subprocess, itertools
+import os, sys, traceback, subprocess, itertools, contextlib
 
+import coverage
 from ply import yacc
 from sl_lexer import tokens, Lexer
 from ast import Node
@@ -258,38 +259,53 @@ if __name__ == '__main__':
     if not sys.argv[2:]: sys.exit(1)
     slang_loc = sys.argv[1]
     file_names = [os.path.abspath(s) for s in sys.argv[2:]]
-    files = [read(path) for path in file_names]
-    trees = [parse(text) for text in files]
-    for tree in trees:
-        print tree
-        print
-        print
+    files = [(path, read(path)) for path in file_names]
+    trees = [(path, parse(text)) for path, text in files]
+    for path, tree in trees:
+        f = open(path+'.ast', 'w')
+        f.write(str(tree))
+        f.close()
 
-    print slang_loc
-    erase = subprocess.Popen(['coverage', 'erase'])
-    erase.wait()
-    slang = subprocess.Popen(['coverage', 'run', os.path.join(slang_loc, 'slang'), '--stdin'],
-          stdin=subprocess.PIPE)
-    slang.communicate(files[0])
-    os.unlink('a.out')
-    os.unlink('a.out.o')
+    @contextlib.contextmanager
+    def eraser():
+        erase = subprocess.Popen(['coverage', 'erase'])
+        erase.wait()
+        yield
+        erase = subprocess.Popen(['coverage', 'erase'])
+        erase.wait()
 
-    import coverage
-    cov = coverage.coverage()
-    cov.load()
-    print ' '.join(['find', slang_loc, '-name', '"*.py"'])
-    find = subprocess.Popen(['find', slang_loc, '-name', '*.py'],
-          stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    slang_files = [f for f in find.communicate('')[0].split('\n') if f]
 
-    def rnge(start, end=None):
-        if end is None:
-            return [start]
-        return list(xrange(start, end+1))
-    name = '../slang/slang'
-    table = [[os.path.relpath(name, slang_loc)] + \
-        sorted(list(set(cov.analysis(name)[1]) - set(cov.analysis(name)[2])))
-      for name in slang_files
-    ]
-    for row in table:
-        print row
+    for fname, text in files:
+        with eraser():
+            slang = subprocess.Popen(
+                  [
+                    'coverage', 'run',
+                    os.path.join(slang_loc, 'slang'), '--stdin'
+                  ],
+                  stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+                  stderr=subprocess.PIPE
+            )
+            slang.communicate(text)
+            os.unlink('a.out')
+            os.unlink('a.out.o')
+
+            cov = coverage.coverage()
+            cov.load()
+            find = subprocess.Popen(
+                ['find', slang_loc, '-name', '*.py'],
+                stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE
+            )
+            slang_files = [f for f in find.communicate('')[0].split('\n') if f]
+
+            table = [[os.path.relpath(name, slang_loc)] + \
+                [len(cov.analysis(name)[1])] + \
+                sorted(
+                  list(set(cov.analysis(name)[1]) - set(cov.analysis(name)[2]))
+                )
+              for name in slang_files
+            ]
+            s = '\n'.join(', '.join(str(col) for col in row) for row in table)
+            f = open(fname+'.coverage', 'w')
+            f.write(s)
+            f.close()
