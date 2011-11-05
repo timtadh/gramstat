@@ -32,7 +32,9 @@ class Registration(object):
         )
         self.tables[name] = table
 
-    def register(self, type, range=None, rowloader=None, depends=None):
+    def register(
+      self, type, range=None, rowloader=None, depends=None, uses=None):
+
         assert hasattr(self, 'basepath')
         assert type in self.types
         def default_range(conf):
@@ -42,6 +44,7 @@ class Registration(object):
         if range is None: range = default_range
         if rowloader is None: rowloader = default_rowloader
         if depends is None: depends = list()
+        if uses is None: uses = list()
 
         def dec(f):
             name = f.func_name
@@ -72,6 +75,7 @@ class Registration(object):
                         'type':type,
                         'function':wrapper,
                         'depends':depends,
+                        'uses':set(uses),
                     }})
             return wrapper
 

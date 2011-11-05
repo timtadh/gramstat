@@ -222,3 +222,28 @@ def tree_number(path, oldtable, tables, conf):
     table = tuple((i, n) for i, n in enumerate(numbers))
     save(path, table)
     return table
+
+
+@registration.register('table', uses=['coverage'])
+def avg_filecov(path, oldtable, tables, conf):
+    total_cov = dict()
+    for cov_path, table in conf['coverage']:
+        for fname, info in table.iteritems():
+            Sum = total_cov.get(fname, 0.0)
+            count = info['line_count']
+            lines = info['executed_lines']
+            if count:
+                avg = len(lines)/float(count)
+            else:
+                avg = 1.0
+            total_cov[fname] = Sum + avg
+    table = [
+        (fname, Sum, Sum/float(len(conf['trees'])))
+        for fname, Sum in total_cov.iteritems()
+    ]
+
+    for row in table:
+        print row
+
+    save(path, table)
+    return table

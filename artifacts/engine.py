@@ -4,6 +4,7 @@
 #Email: tim.tadh@hackthology.com
 #For licensing see the LICENSE file in the top level directory.
 
+import sys
 
 from reg import registration
 
@@ -74,13 +75,30 @@ class filter_artifacts(object):
 
         def isrequired(d):
             '''Is this a required object?'''
+            for use in d['uses']:
+                if not conf[use]: return False
             if d['name'] in conf['excluded_artifacts']: return False
             elif d['name'] in conf['requested_artifacts']: return True
             elif d['type'] == 'img' and conf['genimgs']: return True
             elif d['type'] == 'table' and conf['gentables']: return True
             return False
 
-        def isdependency(name, required):
+        def allow(d):
+            for use in d['uses']:
+                if conf[use]: continue
+                if conf['list_artifacts']:
+                    sys.stderr.write('WARNING: ')
+                sys.stderr.write((
+                    'Artifact "%s" was requested but requires "%s" which was '
+                    'not supplied.\n\n'
+                ) % (d['name'], use))
+                if not conf['list_artifacts']:
+                    sys.exit(99)
+                else:
+                    return False
+            return True
+
+        def isdependency(name, d, required):
             '''Do any of the required artifacts depend on this one?'''
             for req in required:
                 if req in reached_by[name]:
@@ -89,8 +107,11 @@ class filter_artifacts(object):
 
         reached_by = _reached_by()
         required = set(name for name, d in artifacts if isrequired(d))
-        cls.cache = tuple((name, d['function'])
-            for name, d in artifacts if isrequired(d) or isdependency(name, required))
+        cls.cache = tuple(
+            (name, d['function'])
+            for name, d in artifacts
+            if allow(d) and (isrequired(d) or isdependency(name, d, required))
+        )
 
         return cls.cache
 

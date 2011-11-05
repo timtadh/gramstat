@@ -23,6 +23,7 @@ error_codes = {
     'bad_file_reads':9,
     'stdin_and_files':10,
     'file_instead_of_dir':11,
+    'stdin_and_coverage':12,
 }
 
 usage_message = \
@@ -93,7 +94,9 @@ Explanation
             test/ex/1.sl.coverage
             ...
 
+    The coverage files are in CSV format
 
+        file_name, number_executable_lines, executed, lines, enumerated, ...
 
 Options
 
@@ -292,6 +295,7 @@ def main(args):
     requested_artifacts = dict()
     excluded = list()
     list_artifacts = False
+    coverage = None
     for opt, arg in opts:
         if opt in ('-h', '--help'):
             usage()
@@ -310,6 +314,7 @@ def main(args):
             list_artifacts = True
         elif opt in ('-c', '--coverage'):
             log('WARNING: -c not yet supported')
+            coverage = True
         elif opt in ('-A', '--Artifact'):
             #log('WARNING: -A not yet supported')
             requested_artifacts.update((parse_artspec(arg),))
@@ -323,6 +328,10 @@ def main(args):
         elif opt in ('-s', '--stdin'):
             stdin = True
 
+    if coverage is not None and stdin:
+        log('Cannot process both coverage and stdin, supply one or the other.')
+        usage(error_codes['stdin_and_coverage'])
+
     if len(args) > 0 and stdin:
         log('Cannot process both files and stdin, supply one or the other.')
         usage(error_codes['stdin_and_files'])
@@ -331,13 +340,45 @@ def main(args):
         log('You must provide a list of syntax trees to characterize.')
         usage(error_codes['no_args'])
 
-    file_paths = [assert_file_exists(arg) for arg in args]
+    file_paths = sorted(assert_file_exists(arg) for arg in args)
     syntax_trees = [mktree(read_file_or_die(path)) for path in file_paths]
     if stdin: syntax_trees += [mktree(tree) for tree in split_stdin()]
 
     if requested_artifacts:
         genimgs = False
         gentables = False
+
+    if coverage is not None:
+        cov_files = [
+            assert_file_exists(path.replace('.ast', '.coverage'))
+            for path in file_paths
+        ]
+        tables = [
+            (
+              path,
+              [
+                [col.strip() for col in row.split(',')]
+                for row in read_file_or_die(path).split('\n')
+              ]
+            )
+            for path in cov_files
+        ]
+        coverage = [
+            (
+              path,
+              dict(
+                (
+                  row[0],
+                  {
+                    'line_count':int(row[1]),
+                    'executed_lines':set(int(col) for col in row[2:])
+                  }
+                )
+                for row in table
+              )
+            )
+            for path, table in tables
+        ]
 
     conf = {'trees':syntax_trees,
             'grammar': '' if grammar is None else read_file_or_die(grammar),
@@ -348,6 +389,8 @@ def main(args):
             'gentables':gentables,
             'requested_artifacts':requested_artifacts,
             'excluded_artifacts':excluded,
+            'coverage':coverage,
+            'list_artifacts':list_artifacts,
     }
 
     if list_artifacts:
