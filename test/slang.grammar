@@ -1,0 +1,52 @@
+Start : Stmts
+Stmts : Stmts Stmt
+Stmts : Stmt
+Stmt : PRINT Expr
+Stmt : Call
+Stmt : NAME EQUAL Expr
+Stmt : NAME EQUAL FuncDecl
+Stmt : IF LPAREN BooleanExpr RPAREN LCURLY Stmts RCURLY
+Stmt : IF LPAREN BooleanExpr RPAREN LCURLY Stmts RCURLY ELSE LCURLY Stmts RCURLY
+Stmt : VAR NAME
+Stmt : VAR NAME EQUAL Expr
+Stmt : VAR NAME EQUAL FuncDecl
+FuncDecl : FUNC LPAREN RPAREN LCURLY Return RCURLY
+FuncDecl : FUNC LPAREN RPAREN LCURLY Stmts Return RCURLY
+FuncDecl : FUNC LPAREN DParams RPAREN LCURLY Return RCURLY
+FuncDecl : FUNC LPAREN DParams RPAREN LCURLY Stmts Return RCURLY
+Return : RETURN
+Return : RETURN Expr
+Expr : AddSub
+AddSub : AddSub PLUS MulDiv
+AddSub : AddSub DASH MulDiv
+AddSub : MulDiv
+MulDiv : MulDiv STAR Atomic
+MulDiv : MulDiv SLASH Atomic
+MulDiv : Atomic
+Atomic : Value
+Atomic : LPAREN Expr RPAREN
+Value : INT_VAL
+Value : NAME
+Value : Call
+Call : NAME LPAREN Params RPAREN
+Call : NAME LPAREN RPAREN
+Params : Params COMMA Expr
+Params : Expr
+DParams : DParams COMMA NAME
+DParams : NAME
+BooleanExpr : OrExpr
+OrExpr : OrExpr OR AndExpr
+OrExpr : AndExpr
+AndExpr : AndExpr AND NotExpr
+AndExpr : NotExpr
+NotExpr : NOT BooleanTerm
+NotExpr : BooleanTerm
+BooleanTerm : CmpExpr
+BooleanTerm : LPAREN BooleanExpr RPAREN
+CmpExpr : Expr CmpOp Expr
+CmpOp : EQEQ
+CmpOp : NQ
+CmpOp : LT
+CmpOp : LE
+CmpOp : GT
+CmpOp : GE
