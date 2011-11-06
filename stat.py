@@ -346,7 +346,7 @@ def main(args):
         elif opt in ('-a', '--artifacts'):
             list_artifacts = True
         elif opt in ('-c', '--coverage'):
-            log('WARNING: -c not yet supported')
+            #log('WARNING: -c not yet supported')
             coverage = True
         elif opt in ('-A', '--Artifact'):
             #log('WARNING: -A not yet supported')
@@ -382,8 +382,18 @@ def main(args):
         genimgs = False
         gentables = False
 
+    if grammar is not None:
+        s = read_file_or_die(grammar)
+        grammar = list()
+        for row in s.split('\n'):
+            if not row: continue
+            nonterm, prod = row.split(':', 1)
+            grammar.append((nonterm, prod.split()))
+        for row in grammar:
+            print row
+
     conf = {'trees':syntax_trees,
-            'grammar': '' if grammar is None else read_file_or_die(grammar),
+            'grammar': grammar,
             'outdir':assert_dir_exists(outdir),
             'loadtables':usetables,
             'loadpath':loadpath,
