@@ -85,7 +85,15 @@ def infer_grammar(path, oldtable, tables, conf):
         tuple([nonterm] + [':'.join(p) for p in P])
         for nonterm, P in productions.iteritems()
     )
-    save(path, table)
+    gramfile = '\n'.join(
+        ':'.join((
+            nonterm,
+            ' '.join(prod)
+        ))
+        for nonterm, prods in productions.iteritems()
+        for prod in prods
+    ) + '\n'
+    with open(path, 'w') as f: f.write(gramfile)
     return table
 
 @registration.register('table', depends=['infer_grammar'])
@@ -277,3 +285,7 @@ def verify_grammar(path, oldtable, tables, conf):
                 )
 
     check(igram, kgram, 'inferred grammar', 'supplied grammar')
+
+@registration.register('table', uses=['grammar'], depends=['verify_grammar'])
+def grammar(path, oldtable, tables, conf):
+    return conf['grammar']
