@@ -394,8 +394,6 @@ def main(args):
             prods = grammar.get(nonterm, set())
             prods.add(tuple(p.strip() for p in prod.split()))
             grammar[nonterm] = prods
-        for row in grammar.iteritems():
-            print row
 
     conf = {'trees':syntax_trees,
             'grammar': grammar,

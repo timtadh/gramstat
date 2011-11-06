@@ -261,14 +261,14 @@ def verify_grammar(path, oldtable, tables, conf):
     def check(X, Y, x_name, y_name):
         for nonterm, x_prods in X.iteritems():
             if nonterm not in Y:
-                print (
+                print >>sys.stderr, (
                   'WARNING: nonterm "%s" not found in "%s"'
                 ) % (nonterm, y_name)
                 continue
             y_prods = Y[nonterm]
             X_tra = x_prods - y_prods
             if X_tra:
-                print (
+                print >>sys.stderr, (
                   'WARNING: productions where found in "%s" but not in "%s"\n'
                   '     %s -> %s'
                 ) % (
