@@ -69,7 +69,11 @@ def term_count(path, oldtable, tables, conf):
 def infer_grammar(path, oldtable, tables, conf):
     productions = dict()
     if oldtable is not None:
-        productions.update(lib.parse_grammar('\n'.join(''.join(row) for row in oldtable)))
+        ## TODO: clean this jankyness up! we shouldn't have to rejoin oldtable
+        ## so we can parse it.
+        productions.update(
+          lib.parse_grammar('\n'.join(''.join(row) for row in oldtable))
+        )
 
     def callback(productions, node, depth):
         if not node.children: return
