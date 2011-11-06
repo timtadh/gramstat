@@ -287,6 +287,39 @@ def verify_grammar(path, oldtable, tables, conf):
 
     check(igram, kgram, 'inferred grammar', 'supplied grammar')
 
-@registration.register('table', uses=['grammar'], depends=['verify_grammar'])
+@registration.register('table', depends=['verify_grammar'])
 def grammar(path, oldtable, tables, conf):
     return conf['grammar']
+
+@registration.register('table', depends=['grammar'])
+def production_coverage(path, oldtable, tables, conf):
+    grammar = dict(
+      (
+        nonterm,
+        tuple(sorted(':'.join(p) for p in prods))
+      )
+      for nonterm, prods in conf['grammar'].iteritems()
+    )
+    def initstats():
+        stats = dict()
+        total = 0
+        for nonterm, P in grammar.iteritems():
+            for i, p in enumerate(P):
+                stats[(nonterm, i+1)] = 0
+                total += 1
+        return stats, total
+
+    def callback(grammar, local_cov, global_cov, node, depth):
+        if not node.children: return
+        productions = grammar[node.label]
+        p = productions.index(':'.join(kid.label for kid in node.children)) + 1
+        local_cov[(node.label, p)] = 1
+        global_cov[(node.label, p)] = 1
+
+    global_cov, total = initstats()
+    for tree in conf['trees']:
+        local_cov, total = initstats()
+        walktree(tree, functools.partial(callback, grammar, local_cov, global_cov))
+        print float(sum(val for val in local_cov.itervalues()))/total
+    print 'global', float(sum(val for val in global_cov.itervalues()))/total
+
