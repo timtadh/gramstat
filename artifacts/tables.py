@@ -245,8 +245,5 @@ def avg_filecov(path, oldtable, tables, conf):
         for fname, Sum in total_cov.iteritems()
     ]
 
-    for row in table:
-        print row
-
     save(path, table)
     return table

@@ -269,6 +269,39 @@ def parse_artspec(s):
     name, path = s.split(':', 1)
     return name, os.path.abspath(path)
 
+def load_coverage(coverage, file_paths):
+    if coverage is None: return None
+    cov_files = [
+        assert_file_exists(path.replace('.ast', '.coverage'))
+        for path in file_paths
+    ]
+    tables = [
+        (
+          path,
+          [
+            [col.strip() for col in row.split(',')]
+            for row in read_file_or_die(path).split('\n')
+          ]
+        )
+        for path in cov_files
+    ]
+    return [
+        (
+          path,
+          dict(
+            (
+              row[0],
+              {
+                'line_count':int(row[1]),
+                'executed_lines':set(int(col) for col in row[2:])
+              }
+            )
+            for row in table
+          )
+        )
+        for path, table in tables
+    ]
+
 def main(args):
 
     try:
@@ -343,42 +376,11 @@ def main(args):
     file_paths = sorted(assert_file_exists(arg) for arg in args)
     syntax_trees = [mktree(read_file_or_die(path)) for path in file_paths]
     if stdin: syntax_trees += [mktree(tree) for tree in split_stdin()]
+    coverage = load_coverage(coverage, file_paths)
 
     if requested_artifacts:
         genimgs = False
         gentables = False
-
-    if coverage is not None:
-        cov_files = [
-            assert_file_exists(path.replace('.ast', '.coverage'))
-            for path in file_paths
-        ]
-        tables = [
-            (
-              path,
-              [
-                [col.strip() for col in row.split(',')]
-                for row in read_file_or_die(path).split('\n')
-              ]
-            )
-            for path in cov_files
-        ]
-        coverage = [
-            (
-              path,
-              dict(
-                (
-                  row[0],
-                  {
-                    'line_count':int(row[1]),
-                    'executed_lines':set(int(col) for col in row[2:])
-                  }
-                )
-                for row in table
-              )
-            )
-            for path, table in tables
-        ]
 
     conf = {'trees':syntax_trees,
             'grammar': '' if grammar is None else read_file_or_die(grammar),
