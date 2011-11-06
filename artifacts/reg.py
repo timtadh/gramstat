@@ -51,7 +51,7 @@ class Registration(object):
 
             path = os.path.join(self.basepath, name)
             path += '' if type == 'img' else '.csv'
-            if name in self.requested:
+            if name in self.requested and self.requested[name] is not None:
                 path = self.requested[name]
             if type == 'table' and self.loadtables:
                 loadpath = os.path.join(self.loadpath, name) + '.csv'
