@@ -386,12 +386,15 @@ def main(args):
 
     if grammar is not None:
         s = read_file_or_die(grammar)
-        grammar = list()
+        grammar = dict()
         for row in s.split('\n'):
             if not row: continue
             nonterm, prod = row.split(':', 1)
-            grammar.append((nonterm, prod.split()))
-        for row in grammar:
+            nonterm = nonterm.strip()
+            prods = grammar.get(nonterm, set())
+            prods.add(tuple(p.strip() for p in prod.split()))
+            grammar[nonterm] = prods
+        for row in grammar.iteritems():
             print row
 
     conf = {'trees':syntax_trees,

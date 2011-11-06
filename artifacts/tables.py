@@ -247,3 +247,33 @@ def avg_filecov(path, oldtable, tables, conf):
 
     save(path, table)
     return table
+
+@registration.register('table', uses=['grammar'], depends=['infer_grammar'])
+def verify_grammar(path, oldtable, tables, conf):
+    igram = dict(
+      (
+        row[0],
+        set(tuple(prod.split(':')) for prod in row[1:])
+      )
+      for row in tables['infer_grammar']
+    )
+    kgram = conf['grammar']
+    def check(X, Y, x_name, y_name):
+        for nonterm, x_prods in X.iteritems():
+            if nonterm not in Y:
+                print (
+                  'WARNING: nonterm "%s" not found in "%s"'
+                ) % (nonterm, y_name)
+                continue
+            y_prods = Y[nonterm]
+            X_tra = x_prods - y_prods
+            if X_tra:
+                print (
+                  'WARNING: productions where found in "%s" but not in "%s"\n'
+                  '     %s -> %s'
+                ) % (
+                  x_name, y_name, nonterm,
+                  '\n           | '.join(' '.join(p) for p in X_tra)
+                )
+
+    check(igram, kgram, 'inferred grammar', 'supplied grammar')
