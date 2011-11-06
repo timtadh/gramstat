@@ -33,7 +33,7 @@ class Registration(object):
         self.tables[name] = table
 
     def register(
-      self, type, range=None, rowloader=None, depends=None, uses=None):
+      self, type, range=None, rowloader=None, depends=None, uses=None, ext=None):
 
         assert hasattr(self, 'basepath')
         assert type in self.types
@@ -45,16 +45,22 @@ class Registration(object):
         if rowloader is None: rowloader = default_rowloader
         if depends is None: depends = list()
         if uses is None: uses = list()
+        if type == 'table':
+            if ext is None:
+                ext = '.csv'
+        else:
+            ext = ''
 
         def dec(f):
             name = f.func_name
 
             path = os.path.join(self.basepath, name)
-            path += '' if type == 'img' else '.csv'
+            path += ext
+
             if name in self.requested and self.requested[name] is not None:
                 path = self.requested[name]
             if type == 'table' and self.loadtables:
-                loadpath = os.path.join(self.loadpath, name) + '.csv'
+                loadpath = os.path.join(self.loadpath, name) + ext
                 self._loadtable(name, loadpath, rowloader)
 
             @functools.wraps(f)

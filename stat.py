@@ -7,7 +7,7 @@
 import os, sys
 from getopt import getopt, GetoptError
 
-import ast, artifacts
+import ast, artifacts, lib
 
 VERSION = 'git master'
 
@@ -385,15 +385,8 @@ def main(args):
         gentables = False
 
     if grammar is not None:
-        s = read_file_or_die(grammar)
-        grammar = dict()
-        for row in s.split('\n'):
-            if not row: continue
-            nonterm, prod = row.split(':', 1)
-            nonterm = nonterm.strip()
-            prods = grammar.get(nonterm, set())
-            prods.add(tuple(p.strip() for p in prod.split()))
-            grammar[nonterm] = prods
+        grammar = lib.parse_grammar(read_file_or_die(grammar))
+
 
     conf = {'trees':syntax_trees,
             'grammar': grammar,

@@ -7,7 +7,7 @@
 import sys, os, subprocess, functools, collections
 
 from reg import registration
-import sieve
+import sieve, lib
 
 def walktree(root, process=None, finalize=None):
     def default(*args):
@@ -65,14 +65,11 @@ def term_count(path, oldtable, tables, conf):
         if not node.children: symbols[node.label] = symbols.get(node.label, 0) + 1
     return symbol_counter(path, oldtable, conf['trees'], callback)
 
-@registration.register('table')
+@registration.register('table', ext='.grammar')
 def infer_grammar(path, oldtable, tables, conf):
     productions = dict()
     if oldtable is not None:
-        productions.update(
-            (row[0], set(tuple(e for e in col.split(':')) for col in row[1:]))
-                for row in oldtable
-        )
+        productions.update(lib.parse_grammar('\n'.join(''.join(row) for row in oldtable)))
 
     def callback(productions, node, depth):
         if not node.children: return
@@ -86,7 +83,7 @@ def infer_grammar(path, oldtable, tables, conf):
         for nonterm, P in productions.iteritems()
     )
     gramfile = '\n'.join(
-        ':'.join((
+        ' : '.join((
             nonterm,
             ' '.join(prod)
         ))
