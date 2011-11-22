@@ -1,0 +1,6 @@
+var q = 1
+print q
+var z = 2
+print q
+print z
+

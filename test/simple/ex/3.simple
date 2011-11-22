@@ -1,0 +1,10 @@
+var hello = 1
+var goodbye = 2
+var cc = 2
+print goodbye
+var x = 8
+print hello
+print cc
+var y = 8
+print y
+

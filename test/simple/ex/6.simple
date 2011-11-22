@@ -1,0 +1,7 @@
+var aaa = 123
+var bbb = 456
+var ccc = 789
+print aaa
+print ccc
+print bbb
+

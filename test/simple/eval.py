@@ -11,15 +11,6 @@ from ply import yacc
 from lexer import tokens, Lexer
 from ast import Node
 
-
-def get(self, n):
-    if n >= 0: return self.slice[n]
-    else: return self.stack[n].value
-
-setattr(yacc.YaccProduction, 'get', get)
-
-
-
 ## If you are confused about the syntax in this file I recommend reading the
 ## documentation on the PLY website to see how this compiler compiler's syntax
 ## works.
@@ -34,41 +25,32 @@ class Parser(object):
         self = super(Parser, cls).__new__(cls, **kwargs)
         self.table = dict()
         self.loc = list()
-        self.yacc = yacc.yacc(module=self,  tabmodule="sl_parser_tab", debug=0, **kwargs)
+        self.yacc = yacc.yacc(module=self,  tabmodule="parser_tab", debug=0, **kwargs)
         return self.yacc
-
-    def __create(self, t):
-        #print type(t), help(t)
-
-        doc = self.__getattribute__(traceback.extract_stack()[-2][2]).__doc__
-        name = doc.split(':', 1)[0].strip()
-        node = Node(name)
-        for i, x in enumerate(t[1:]):
-            if isinstance(x, Node):
-                node.addkid(x)
-            else:
-                node.addkid(t.get(i+1).type)
-        return node
 
     def p_Start(self, t):
         'Start : Stmts'
-        t[0] = self.__create(t)
 
     def p_Stmts1(self, t):
         'Stmts : Stmts Stmt'
-        t[0] = self.__create(t)
 
     def p_Stmts2(self, t):
         'Stmts : Stmt'
-        t[0] = self.__create(t)
 
     def p_Stmt0(self, t):
         'Stmt : PRINT NAME'
-        t[0] = self.__create(t)
+        name = t[2]
+        if name not in self.table:
+            msg = '%s has not been declared' % name
+            raise Exception, msg
+        print self.table[name]
 
     def p_Stmt2(self, t):
         'Stmt : VAR NAME EQUAL INT_VAL'
-        t[0] = self.__create(t)
+        name = t[2]
+        if name in self.table:
+            raise Exception, '%s redeclared' % name
+        self.table[name] = t[4]
 
     def p_error(self, t):
         raise SyntaxError, "Syntax error at '%s', %s.%s" % (t,t.lineno,t.lexpos)
@@ -82,17 +64,6 @@ def read(path):
 def parse(s):
     return Parser().parse(s, lexer=Lexer())
 
-def main():
-    if not sys.argv[1:]: sys.exit(1)
-    file_names = [os.path.abspath(s) for s in sys.argv[1:]]
-    files = [(path, read(path)) for path in file_names]
-    trees = [(path, parse(text)) for path, text in files]
-    for path, tree in trees:
-        f = open(path+'.ast', 'w')
-        f.write(str(tree))
-        f.close()
-
-
 if __name__ == '__main__':
-    main()
+    parse(raw_input(''))
 

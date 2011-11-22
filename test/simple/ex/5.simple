@@ -1,0 +1,6 @@
+var a = 12
+var b = 0x12
+print a
+var c = 124
+print c
+
