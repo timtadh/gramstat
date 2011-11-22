@@ -20,7 +20,8 @@ def build_tree(gen):
                 stack.pop()
         if children:
             stack.append({'node':node, 'children':children})
-        else:
+        elif ':' in node.label:
+            print node.label
             sym, val = node.label.split(':', 1)
             node.label = sym
             node.value = val
