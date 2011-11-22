@@ -84,6 +84,7 @@ class filter_artifacts(object):
             return False
 
         def allow(d):
+            if d['name'] in conf['excluded_artifacts']: return False
             for use in d['uses']:
                 if conf[use]: continue
                 if conf['list_artifacts']:
