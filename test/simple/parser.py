@@ -47,7 +47,8 @@ class Parser(object):
             if isinstance(x, Node):
                 node.addkid(x)
             else:
-                node.addkid(t.get(i+1).type)
+                tok = t.get(i+1)
+                node.addkid(Node(tok.type + ':' + str(tok.value)))
         return node
 
     def p_Start(self, t):

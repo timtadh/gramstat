@@ -20,12 +20,17 @@ def build_tree(gen):
                 stack.pop()
         if children:
             stack.append({'node':node, 'children':children})
+        else:
+            sym, val = node.label.split(':', 1)
+            node.label = sym
+            node.value = val
     return root
 
 class Node(object):
 
     def __init__(self, label, children=None):
         self.label = label
+        self.value = None
         self.children = children if children is not None else list()
 
     def addkid(self, node, before=False):
@@ -75,7 +80,10 @@ class Node(object):
 
     def dotty(self):
         def string(s):
-            if isinstance(s, Node): return str(s.label)
+            if isinstance(s, Node):
+                if s.value is not None:
+                    return ':'.join((str(s.label), str(s.value)))
+                return str(s.label)
             return str(s)
         node = '%(name)s [shape=rect, label="%(label)s"];'
         leaf = '%(name)s [shape=rect, label="%(label)s" style="filled" fillcolor="#dddddd"];'
