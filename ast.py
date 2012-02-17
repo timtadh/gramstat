@@ -21,7 +21,6 @@ def build_tree(gen):
         if children:
             stack.append({'node':node, 'children':children})
         elif ':' in node.label:
-            print node.label
             sym, val = node.label.split(':', 1)
             node.label = sym
             node.value = val
