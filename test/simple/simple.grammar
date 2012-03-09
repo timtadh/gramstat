@@ -2,5 +2,5 @@ Start : Stmts
 Stmts : Stmts Stmt
 Stmts : Stmt
 Stmt : PRINT NAME
-Stmt : VAR NAME EQUAL INT_VAL
+Stmt : VAR NAME EQUAL NUMBER
 

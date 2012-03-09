@@ -68,7 +68,7 @@ class Parser(object):
         t[0] = self.__create(t)
 
     def p_Stmt2(self, t):
-        'Stmt : VAR NAME EQUAL INT_VAL'
+        'Stmt : VAR NAME EQUAL NUMBER'
         t[0] = self.__create(t)
 
     def p_error(self, t):

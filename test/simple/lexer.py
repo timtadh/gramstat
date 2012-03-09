@@ -14,7 +14,7 @@ reserved = dict(
 )
 
 tokens = reserved.values() + [
-    'NAME', 'INT_VAL', 'EQUAL',
+    'NAME', 'NUMBER', 'EQUAL',
 ]
 
 # Common Regex Parts
@@ -49,14 +49,14 @@ class Lexer(object):
     const_hex = '0[xX](' + H + ')+'
     @Token(const_hex)
     def t_CONST_HEX(self, token):
-        token.type = 'INT_VAL'
+        token.type = 'NUMBER'
         token.value = int(token.value, 16)
         return token
 
     const_dec_oct = '(' + D + ')+'
     @Token(const_dec_oct)
     def t_CONST_DEC_OCT(self, token):
-        token.type = 'INT_VAL'
+        token.type = 'NUMBER'
         if (len(token.value) > 1 and token.value[0] == '0'
             or (token.value[0] == '-' and token.value[1] == '0')):
             token.value = int(token.value, 8)
