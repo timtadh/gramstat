@@ -118,56 +118,62 @@ def production_probability(path, oldtable, tables, conf):
 @registration.register('table', depends=['production_count', 'infer_grammar'])
 def conditional_probabilities(path, oldtable, tables, conf):
     grammar = dict((row[0], tuple(row[1:])) for row in tables['infer_grammar'])
-    stats = dict()
-    prodnum = dict()
-    #print grammar
-    #print "\n"
-    for nonterm, P in grammar.iteritems():
-        for i, p in enumerate(P):
-            prodnum[(nonterm, p)] = i+1
-            stats[(nonterm, i+1)] = 0
-    if oldtable is not None:
-        for nonterm, p, count in oldtable:
-            stats[(nonterm, prodnum[(nonterm, p)])] = int(count)
-    #print prodnum
-
 
     counts = dict()
     stack = list()
-    def callback(grammar, stats, node, depth):
+    lookBack = 2
+    def callback(grammar, node, depth):
+        #if this is a new ast then we want to reset our information
         if node.label == "Start":
             while stack:
                 stack.pop()
             counts.clear()
-            prev2 = (None, None, False)
-            stack.append(prev2)
+            initStack = (tuple(None for x in range(lookBack)), False)
+            stack.append(initStack)
+
+        prev = stack[len(stack)-1][0]
+        requirePop = stack[len(stack)-1][1]
+
+        prevAsTuple = tuple(prev[x] for x in range(lookBack))
 
         if not node.children:
-            if stack[len(stack)-1][2]:
+            if requirePop:
                 stack.pop()
             return
-        prev2 = stack[len(stack)-1]
-        if prev2[2]:
+
+        if requirePop:
             stack.pop()
+
         productions = grammar[node.label]
         p = productions.index(':'.join(kid.label for kid in node.children)) + 1
 
-
+        #build up our dictionary of production counts
         if not counts.has_key(node.label):
-            counts[node.label] = {(prev2[0], prev2[1]) : 1}
+            counts[node.label] = {prevAsTuple : 1}
         else:
-            if not counts.get(node.label).has_key((prev2[0], prev2[1])):
-                counts[node.label][(prev2[0], prev2[1])] = 1
+            if not counts.get(node.label).has_key(prevAsTuple):
+                counts[node.label][prevAsTuple] = 1
             else:
-                 counts[node.label][(prev2[0], prev2[1])] += 1
+                counts[node.label][prevAsTuple] += 1
 
-
+        #append this new rule to the stack as our new "most previous"
         if grammar[node.label][p-1].count(":") > 1:
-            stack.append((prev2[1], grammar[node.label][p-1], False))
-        else:
-            stack.append((prev2[1], grammar[node.label][p-1], True))
-        stats[(node.label, p)] += 1
-    walktrees(conf['trees'], functools.partial(callback, grammar, stats))
+            stack.append(
+                (
+                    tuple(prev[x+1] for x in range(lookBack-1)) + (grammar[node.label][p-1],),
+                    False
+                )
+            )
+        else: #if there is only one nonterminal in this rule then we want to log it as a previous but then pop it from the stack
+              #this way, rules that have >1 nonterminals will keep their "prev" relative to what it was originally.
+              #e.g. with NT:NT2:NT3, when we get to NT2, we dont want previous to include the previous from when we went down NT's productions
+            stack.append(
+                (
+                    tuple(prev[x+1] for x in range(lookBack-1)) + (grammar[node.label][p-1],),
+                    True
+                 )
+            )
+    walktrees(conf['trees'], functools.partial(callback, grammar))
 
 
     #now we normalize
@@ -176,19 +182,19 @@ def conditional_probabilities(path, oldtable, tables, conf):
           nonterm,
           dict(
             (
-              prev2,
+              prev,
               float(num)/float(sum(num for num in myCounts.itervalues()))
             )
-            for prev2, num in myCounts.iteritems()
+            for prev, num in myCounts.iteritems()
           )
         )
         for nonterm, myCounts in counts.iteritems()
     )
 
     table = tuple(
-        (nonterm, prev2, probability)
+        (nonterm, prev, probability)
         for nonterm, myCounts in probabilities.iteritems()
-            for prev2, probability in myCounts.iteritems()
+            for prev, probability in myCounts.iteritems()
     )
 
     save(path, table)
