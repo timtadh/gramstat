@@ -1,7 +1,8 @@
 /* A grammar for the simple matrix calculator.
  *
  */
-
+Start -> Expr
+      ;
 Expr -> Expr PLUS Term
       | Expr DASH Term
       | Term
