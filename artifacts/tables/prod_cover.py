@@ -19,7 +19,7 @@ def callback(grammar, cov, node, depth):
     p = productions.index(':'.join(kid.label for kid in node.children)) + 1
     cov[(node.label, p)] = 1
 
-@registration.register('table', depends=['grammar'])
+#@registration.register('table', depends=['grammar'])
 def production_coverage_local(path, oldtable, tables, conf):
     grammar = dict(
       (
@@ -42,7 +42,7 @@ def production_coverage_local(path, oldtable, tables, conf):
         walktree(tree, functools.partial(callback, grammar, local_cov))
         print float(sum(val for val in local_cov.itervalues()))/total
 
-@registration.register('table', depends=['grammar'])
+#@registration.register('table', depends=['grammar'])
 def production_coverage_global(path, oldtable, tables, conf):
     grammar = dict(
       (

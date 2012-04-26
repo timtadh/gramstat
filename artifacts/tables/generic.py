@@ -103,7 +103,7 @@ def tree_number(path, oldtable, tables, conf):
     return table
 
 
-@registration.register('table', uses=['coverage'])
+#@registration.register('table', uses=['coverage'])
 def avg_filecov(path, oldtable, tables, conf):
     total_cov = dict()
     if oldtable is not None:

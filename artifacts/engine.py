@@ -111,7 +111,7 @@ class filter_artifacts(object):
         cls.cache = tuple(
             (name, d['function'])
             for name, d in artifacts
-            if allow(d) and (isrequired(d) or isdependency(name, d, required))
+            if (isrequired(d) or isdependency(name, d, required)) and allow(d)
         )
 
         return cls.cache
