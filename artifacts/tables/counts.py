@@ -115,14 +115,33 @@ def production_probability(path, oldtable, tables, conf):
     save(path, table)
     return table
 
-@registration.register('table', depends=['production_count', 'infer_grammar'])
-def conditional_probabilities(path, oldtable, tables, conf):
+@registration.register('table', depends=['infer_grammar'])
+def conditional_counts(path, oldtable, tables, conf):
     grammar = dict((row[0], tuple(row[1:])) for row in tables['infer_grammar'])
 
     counts = dict() #counts how many times a RULE is reached by a specific prevTuple (e.g. counts[NT => A:B:C][(NT1,NT2)] == 5)
-    terminalCounts = dict() #counts how many times a prevTuple reaches a specific NONTERMINAL (e.g. terminalCounts[(NT1,NT2)][NT] == 78)
+    nonterminalCounts = dict() #counts how many times a prevTuple reaches a specific NONTERMINAL (e.g. nonterminalCounts[(NT1,NT2)][NT] == 78)
     stack = list()
     lookBack = 2 #how many items in prevTuple?
+
+    def count_nonterms(nonterminalCounts, prevAsTuple, node):
+        if not nonterminalCounts.has_key(prevAsTuple):
+            nonterminalCounts[prevAsTuple] = {node.label : 1}
+        else:
+            if not nonterminalCounts.get(prevAsTuple).has_key(node.label):
+                nonterminalCounts[prevAsTuple][node.label] = 1
+            else:
+                nonterminalCounts[prevAsTuple][node.label] += 1
+
+    def increase_counts(counts, prevAsTuple, chosenRule):
+        if not counts.has_key(chosenRule):
+            counts[chosenRule] = {prevAsTuple : 1}
+        else:
+            if not counts.get(chosenRule).has_key(prevAsTuple):
+                counts[chosenRule][prevAsTuple] = 1
+            else:
+                counts[chosenRule][prevAsTuple] += 1
+
     def callback(grammar, node, depth):
         #if this is a new ast then we want to clear our stack
         if node.label == "Start":
@@ -149,25 +168,11 @@ def conditional_probabilities(path, oldtable, tables, conf):
 
         chosenRule = node.label + " => " + grammar[node.label][p-1]
 
-
-        if not counts.has_key(chosenRule):
-            counts[chosenRule] = {prevAsTuple : 1}
-        else:
-            if not counts.get(chosenRule).has_key(prevAsTuple):
-                counts[chosenRule][prevAsTuple] = 1
-            else:
-                counts[chosenRule][prevAsTuple] += 1
-
-        if not terminalCounts.has_key(prevAsTuple):
-            terminalCounts[prevAsTuple] = {node.label : 1}
-        else:
-            if not terminalCounts.get(prevAsTuple).has_key(node.label):
-                terminalCounts[prevAsTuple][node.label] = 1
-            else:
-                terminalCounts[prevAsTuple][node.label] += 1
+        increase_counts(counts, prevAsTuple, chosenRule)
+        count_nonterms(nonterminalCounts, prevAsTuple, node)
 
         #append this new rule to the stack as our new "most previous"
-        if grammar[node.label][p-1].count(":") > 1:
+        if grammar[node.label][p-1].count(":") > 1: #do we have more than 1 nonterminal in this rule?
             stack.append(
                 (
                     tuple(prev[x+1] for x in range(lookBack-1)) + (node.label,),
@@ -186,13 +191,104 @@ def conditional_probabilities(path, oldtable, tables, conf):
     walktrees(conf['trees'], functools.partial(callback, grammar))
 
 
+    retTables = dict()
+
+    retTables[0] = tuple(
+        (lookBack, rule) + tuple(nt for nt in prev) + (count,)
+        for rule, myCounts in counts.iteritems()
+            for prev, count in myCounts.iteritems()
+    )
+
+    #we don't save this guy as a csv but we need to log it so that conditional_probabilities() can work right
+    retTables[1] = tuple(
+            (lookBack,) + tuple(prev for prev in prevAsTuple) + (nonterm, count)
+            for prevAsTuple, myCounts in nonterminalCounts.iteritems()
+                for nonterm, count in myCounts.iteritems()
+            )
+
+    save(path, retTables[0])
+    return retTables
+
+
+@registration.register('table', depends=['conditional_counts', 'infer_grammar'])
+def conditional_probabilities(path, oldtable, tables, conf):
+    dataTables = tables['conditional_counts']
+
+    counts = dict() #counts how many times a RULE is reached by a specific prevTuple (e.g. counts[NT => A:B:C][(NT1,NT2)] == 5)
+    nonterminalCounts = dict() #counts how many times a prevTuple reaches a specific NONTERMINAL (e.g. nonterminalCounts[(NT1,NT2)][NT] == 78)
+
+    lookBack = dataTables[0][0][0] # ...first item in the first row of the first table
+                                   # how many "previous" nonterminals will be in each row? Need this to know what is what in each row
+
+    #dataTables[0] = counts table
+    #dataTables[1] = nontermcounts table
+
+    for row in dataTables[0]:
+        #row format: (lookBack, rule, prev, prev, ..., prev, count) where there are lookBack number of "prev" nonterminals
+        rule = row[1]
+        prevAsTuple = tuple(row[x + 2] for x in range(lookBack))
+        theCount = row[lookBack + 2]
+        if not counts.has_key(rule):
+            counts[rule] = {prevAsTuple : theCount}
+        else:
+            counts[rule][prevAsTuple] = theCount
+
+    for row in dataTables[1]:
+        #row format: (lookBack, prev, prev, ..., prev, nonterm, count) where there are lookBack number of "prev" nonterminals
+        #note: unlike the counts table, this table has no RULES at all. Everything is a nonterminal.
+        prevAsTuple = tuple(row[x + 1] for x in range(lookBack))
+        nonterm = row[lookBack + 1]
+        theCount = row[lookBack + 2]
+        if not nonterminalCounts.has_key(prevAsTuple):
+            nonterminalCounts[prevAsTuple] = {nonterm : theCount}
+        else:
+            nonterminalCounts[prevAsTuple][nonterm] = theCount
+
+
+    '''
+    output csv format looks like this:
+
+    lookBack, rule, prev, prev, .., prev, probability
+
+    the probability is a conditional probability: P[rule | prev]
+
+    Here is an example of how it works:
+
+        S : A
+          | A B
+
+        A : B C
+          | C
+
+        B : r C
+          | r
+
+        C : s
+          | q
+
+
+        B=r:C, S A B  = 6
+        B=r, S A B    = 4
+        B=r:C, S B    = 9
+        B=r, S B      = 1
+        C=s, S A C    = x
+
+        Pr(B=r:C | S A B) = Pr(S A B | B=r:C)Pr(B=r:C)/Pr(S A B)
+                        = Pr(S A B | B=r:C)(15/20)/(10/20)
+                        = (6/15)*(3/4) / (1/2)
+
+        Pr(B=r:C | S A B) = Pr(B=r:C, S A B)/Pr(S A B)
+                        = 6/10
+
+    '''
+
     probabilities = dict(
         (
           rule,
           dict(
             (
               prev,
-              float(num)/float(terminalCounts[prev][rule.split("=>")[0].strip()]) #P[rule | prev]
+              float(num)/float(nonterminalCounts[prev][rule.split("=>")[0].strip()]) #P[rule | prev]
             )
             for prev, num in myCounts.iteritems()
           )
