@@ -340,7 +340,7 @@ def main(args):
             log('WARNING: -g not yet supported')
             grammar = assert_file_exists(arg)
         elif opt in ('-o', '--outdir'):
-            outdir = assert_file_exists(arg)
+            outdir = assert_dir_exists(arg)
         elif opt in ('-i', '--imgs'):
             genimgs = parse_bool(arg)
         elif opt in ('-t', '--tables'):
