@@ -119,10 +119,13 @@ def production_probability(path, oldtable, tables, conf):
 def conditional_counts(path, oldtable, tables, conf):
     grammar = dict((row[0], tuple(row[1:])) for row in tables['infer_grammar'])
 
-    counts = dict() #counts how many times a RULE is reached by a specific prevTuple (e.g. counts[NT => A:B:C][(NT1,NT2)] == 5)
-    nonterminalCounts = dict() #counts how many times a prevTuple reaches a specific NONTERMINAL (e.g. nonterminalCounts[(NT1,NT2)][NT] == 78)
+    counts = dict() # counts how many times a RULE is reached by a specific
+                    # prevTuple (e.g. counts[NT => A:B:C][(NT1,NT2)] == 5)
+    nonterminalCounts = dict() # counts how many times a prevTuple reaches a
+                               # specific NONTERMINAL (e.g.
+                               # nonterminalCounts[(NT1,NT2)][NT] == 78)
     stack = list()
-    lookBack = 2 #how many items in prevTuple?
+    lookBack = 2 # how many items in prevTuple?
 
     def count_nonterms(nonterminalCounts, prevAsTuple, node):
         if not nonterminalCounts.has_key(prevAsTuple):
@@ -144,12 +147,11 @@ def conditional_counts(path, oldtable, tables, conf):
 
     def callback(grammar, node, depth):
         #if this is a new ast then we want to clear our stack
-        if node.label == "Start":
-            while stack:
-                stack.pop()
+        if not stack:
             initStack = (tuple(None for x in range(lookBack)), False)
             stack.append(initStack)
 
+        #print stack
         prev = stack[len(stack)-1][0]
         requirePop = stack[len(stack)-1][1]
 
@@ -188,8 +190,9 @@ def conditional_counts(path, oldtable, tables, conf):
                     True
                  )
             )
-    walktrees(conf['trees'], functools.partial(callback, grammar))
-
+    for tree in conf['trees']:
+        stack = list()
+        walktree(tree, functools.partial(callback, grammar))
 
     retTables = dict()
 
